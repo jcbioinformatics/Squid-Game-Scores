@@ -1,7 +1,7 @@
 ---
 title: "JC Gold"
 author: "Darth 'Super Super Super Super Senior' Anachronox"
-date: "2024-08-30"
+date: "2024-09-06"
 output: 
   flexdashboard::flex_dashboard:
     vertical_layout: scroll
@@ -9,18 +9,19 @@ output:
     css: "./Rmd_Resources/squid-game-scores.css"
 logo: "./Rmd_Resources/jcbioinformatics_logo_TEST_SCALED.png"
 params:
-  input_scores_folder: "./Input_Scoreboard_Data"
+  input_excel_results: "./Input_Scoreboard_Data.xlsx"
   input_roster_aliases: "./Rmd_Resources/example_roster.txt"
   input_weapons_metadata: "./Rmd_Resources/weapons-metadata.txt"
   players_order: "Player-6,Player-4,Player-2,Player-1,Player-5,Player-3"
   colors_source: "./Rmd_Resources/colors_source.R"
   functions_source: "./Rmd_Resources/functions_source.R"
   players_rmd: "./Rmd_Resources/players_pages.Rmd"
-  results_string: "txt"
+  results_string: "NA"
 ---
 
 ```{r load libraries, include=FALSE}
 
+library(readxl)
 library(reshape2)
 library(pheatmap)
 library(grid)
@@ -132,6 +133,8 @@ print(htmltools::h3("Changelog", class="title"))
 
 cat(
   "
+  + 2.2.0 - For the Future - 9/6/2024
+    - Switch to using Excel file for input
   + 2.1.0 - Summer Cleaning - 8/30/2024
     - Remove 'Anachronox' from function names
     - Change first select for Scoreboard to use explicit column names
@@ -224,11 +227,15 @@ modes_ordered <- c(
 
 ```{r load data, include=FALSE}
 
-# Set name of subfolder with results
-input_scores_folder <- params$input_scores_folder
+# Set path to Excel file with results
+input_excel_results <- params$input_excel_results
 
 # Set string to look for to denote tables with scoreboard results
-results_string <- params$results_string
+if (params$results_string == "NA") {
+  results_string = NA
+} else {
+  results_string = params$results_string
+}
 
 # Set order of player names
 players_order <- str_split(params$players_order, pattern = ",")[[1]]
@@ -240,18 +247,25 @@ weapons_table <- read.table(params$input_weapons_metadata, sep = "\t", header = 
 input_roster_aliases_table <- read.table(params$input_roster_aliases, sep = "\t", header = T, check.names = F)
 
 
-# Get all files beginning with "results-"
-listFiles <- list.files(path = input_scores_folder, pattern = results_string)
+# Load Excel sheets
+excel_data <- multiplesheets(
+  input_excel_results,
+  results_string
+  )
 
 
 # Loop thru results tables and perform intitial formatting
-for (i in 1:length(listFiles)){
+for (i in 1:length(names(excel_data))){
   
-  print(listFiles[i])
+  # Send sheet name to variable
+  sheet_name <- names(excel_data)[i]
+  
+  print(sheet_name)
 
   res <- parseTableV2(
-    table_name = paste(input_scores_folder, listFiles[i], sep = '/'),
-    tables_w_assists_string = results_string
+    table_name = excel_data[[sheet_name]],
+    tables_w_assists_string = "*",
+    type = "excel"
     )
 
   
