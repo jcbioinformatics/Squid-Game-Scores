@@ -73,37 +73,34 @@ You are now ready to start using your own data.
 * See Input Data Format section for what those need to look like
 
 
-2. Put all the results files into the same subfolder
-
-
-3. Add your roster file to `Rmd_Resources`
+2. Add your roster file to `Rmd_Resources`
 * It should be a two column text tab delimited file, with the first column (`Player`) being the player name and the second column (`Alias`) being their name in the match
 * This basically accounts for cases where the same player changed their name, as shown with "Player-2" [here](Rmd_Resources/example_roster.txt)
 
 
-4. In [Rmd_Resources/squid-game-scores.css](Rmd_Resources/squid-game-scores.css), change the hexcodes for the `:root` variables
+3. In [Rmd_Resources/squid-game-scores.css](Rmd_Resources/squid-game-scores.css), change the hexcodes for the `:root` variables
 
 ![image](https://github.com/user-attachments/assets/c0ef64de-4fa7-4e6a-9c6b-5cbe8676a3b8)
 * Depending on the text editor used, it may look very different. The above screenshot was taken with it open in [VS Code](https://code.visualstudio.com/download)
 * The important thing is to change the hexcodes in that section as desired
 
 
-5. Open up the `Squid-Game-Scores.Rmd` file 
+4. Open up the `Squid-Game-Scores.Rmd` file 
 * We're going to change some of the values at the very top of the file
 * **Everything we're changing in the Rmd is in double-quotes, so after changing those values, make sure they are still quoted**
 
 
-6. Change "JC Gold" to the name of your team
+5. Change "JC Gold" to the name of your team
 
 
-7. Change the path to the `logo` to yours
+6. Change the path to the `logo` to yours
 * The default is a blue rose I drew in one shot
 * Feel free to keep using that, but if you use yours, the largest dimension should be 48 px
 * You can rescale your logo using [Gimp](https://www.gimp.org/tutorials/GIMP_Quickies/#changing-the-size-dimensions-of-an-image-scale)
 
 
-8. Change the paths to `input_scores_folder` and `input_roster_aliases`
-* The value of `input_scores_folder` should be the path to the folder containing your results files
+8. Change the paths to `input_excel_results` and `input_roster_aliases`
+* The value of `input_excel_results` should be the path to the Excel file containing your results tabs
 * The path to `input_roster_aliases` should be the roster file you added to `Rmd_Resources`
 
 
@@ -112,9 +109,8 @@ You are now ready to start using your own data.
 * The order of the names will be maintained
 
 
-10. If needed, change the values of `results-string` to something all of your results files have in their name
-* If they're saved as text tab-delimited the extension should be either "txt" or "tsv"
-* So, if they're the only files in the subfolder used as input, you can use whichever extension matches your data
+10. If needed, change the values of `results-string` to something to only include the tabs with results
+* By default, "NA" will retain all sheets
 
 
 11. Click `Knit` to process your data
@@ -139,7 +135,8 @@ It's essentially based in the [Wiki table](https://splatoonwiki.org/wiki/List_of
 
 **None of the values entered in this table should be quoted**
 
-Please see [this folder](Input_Scoreboard_Data) for example input data
+Please see [this Excel file](Input_Scoreboard_Data.xlsx) for example input data
+* Google Sheets files can be saved as Excel files
 
 The first row under the header is essentially metadata. 
 
