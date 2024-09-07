@@ -1,0 +1,942 @@
+---
+title: "JC Gold"
+author: "Darth 'Super Super Super Super Senior' Anachronox"
+date: "2024-08-30"
+output: 
+  flexdashboard::flex_dashboard:
+    vertical_layout: scroll
+    smooth_scroll: true
+    css: "./Rmd_Resources/squid-game-scores.css"
+logo: "./Rmd_Resources/jcbioinformatics_logo_TEST_SCALED.png"
+params:
+  input_scores_folder: "./Input_Scoreboard_Data"
+  input_roster_aliases: "./Rmd_Resources/example_roster.txt"
+  input_weapons_metadata: "./Rmd_Resources/weapons-metadata.txt"
+  players_order: "Player-6,Player-4,Player-2,Player-1,Player-5,Player-3"
+  colors_source: "./Rmd_Resources/colors_source.R"
+  functions_source: "./Rmd_Resources/functions_source.R"
+  players_rmd: "./Rmd_Resources/players_pages.Rmd"
+  results_string: "txt"
+---
+
+```{r load libraries, include=FALSE}
+
+library(reshape2)
+library(pheatmap)
+library(grid)
+library(gridExtra)
+library(cowplot)
+
+library(tidyverse)
+library(DT)
+library(plotly)
+library(flexdashboard)
+
+# devtools::install_github("ropensci/iheatmapr")
+#library(iheatmapr)
+
+# datatable default styles
+# https://getbootstrap.com/docs/3.4/css/
+# https://rstudio.github.io/DT/
+
+
+```
+
+
+Info
+==================
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+
+```
+
+
+### Intro
+```{r intro, results='asis'}
+
+cat(
+  "
+Yup, this is what I do for fun. I didn't choose the nerd life, it chose me. 
+
+Anyway, the Tabs description has a pretty good overview of what's in here. The Overall Results tabs will probably be most helpful, basically just recreating the scoreboard results.
+
+Let me know if you have any suggestions or if anything is wrong.
+
+I'm open to trying to make any of the plots here https://xeno.graphics/ 
+
+I don't know what we'd use any of them for, but if anyone wants really wants one (or a few), I'd try to get them incorporated eventually.
+
+Feel free to make any other requests too for things that'd be helpful, and I'll do my best.
+
+  "
+)
+
+
+```
+
+
+### Tabs
+```{r tabs, results='asis'}
+
+cat(
+  "
+* Info
+  + Ramblings
+  + Todo
+* Changelog
+* Overview
+  + Table w/ Opponent, maps, scores, and dates
+  + Stacked bar plot of W/L ratio per mode
+* Heatmap
+  + Games clustered by weapon usage with Result, Map, and Mode annotations
+* Players
+  + Summary stats per weapon (Matches, W/L Ratio, Average K/D, Average Points)
+  + Per match results grouped by Mode
+  + Plot of overall weapon usage
+* Overall Results
+  + Recreation of end of match table shown in-game with team and date also given
+  + PSL-style match tracking table
+  + PSL-style per set weapon usage table
+
+  "
+)
+
+
+```
+
+
+### Todo
+```{r todo, results='asis'}
+
+cat(
+  "
+* Per row grouping summary stats
+* Get interactive heatmap to work
+  "
+)
+
+
+```
+
+
+Changelog
+==================
+
+```{r change log, results = 'asis'}
+
+# Moving title to here fixes the scrollbar issue
+print(htmltools::h3("Changelog", class="title"))
+
+cat(
+  "
+  + 2.1.0 - Summer Cleaning - 8/30/2024
+    - Remove 'Anachronox' from function names
+    - Change first select for Scoreboard to use explicit column names
+    - Remove code for handling games without assists from Player Weapon Overview Table
+    - Change default value for 'results_string' parameter
+  + 2.0.0 - Parties and Plays - 8/3/2024 
+    - Move CSS settings to separate file
+    - Refactor input paths
+    - Refactor per player function
+    - Add running PSL Players Stats
+    - Add PSL Player Stats table
+    - Add PSL Weapon Usage table
+    - Add exports for tables
+    - Split source files by color definition vs function
+    - Remove V1 table parsing function
+    - Set defaults for chunks
+    - Make spacing more consistent
+    - Move changelog into separate tab
+    - Split Info tab into subsections
+    - Add page navigation back in for tables
+    - Remove autowidth
+    - Change table sizing
+    - Fix per set missing player issue
+    - Add dynamic player page generation
+  + 1.4.0 - Not Applicable - 6/2/2024
+    - Add support for player summary table w/ disconnects
+  + 1.3.2 - I Am Legend - 5/19/2024
+    - Fix heat map legend getting cut off
+  + 1.3.1 - Weapons Ready - 5/13/2024
+    - Swap order for Main and Player in Overall Results table
+  + 1.3 - Results May Vary - 4/20/2024
+    - Add support for sets w/ and without assists
+  + 1.2 - Totally Tabular - 4/6/2024
+    - Add additional columns and groupings to player summary table
+    - Add special counts back in to match table
+  + 1.1 - Catching Fire - 4/4/2024
+    - Added results for 3/28/24
+    - Updated names
+  + 1.0.0 - The Lorax - 3/15/2024
+    - Added visuals for weapon usage
+    - Has to be specified manually though
+  + 0.5.0 - Spring Cleaning - 3/9/2024
+    - Added support for missing players on focused team
+    - Cleanup individual player list structure
+    - Add filter for player weapon use details  
+  "
+)  
+
+
+```
+
+
+```{r load additional functions and colors, include=FALSE}
+
+source(params$colors_source)
+source(params$functions_source)
+
+
+```
+
+
+```{r numeric months to names, include=FALSE}
+
+months_vector <- c(
+  "01" = "January",
+  "02" = "February",
+  "03" = "March",
+  "04" = "April",
+  "05" = "May",
+  "06" = "June",
+  "07" = "July",
+  "08" = "August",
+  "09" = "September",
+  "10" = "October",
+  "11" = "November",
+  "12" = "December"
+)
+
+
+```
+
+
+```{r load data, include=FALSE}
+
+# Set name of subfolder with results
+input_scores_folder <- params$input_scores_folder
+
+# Set string to look for to denote tables with scoreboard results
+results_string <- params$results_string
+
+# Set order of player names
+players_order <- str_split(params$players_order, pattern = ",")[[1]]
+
+# Load weapons metadata
+weapons_table <- read.table(params$input_weapons_metadata, sep = "\t", header = T, check.names = F)
+
+# Load roster
+input_roster_aliases_table <- read.table(params$input_roster_aliases, sep = "\t", header = T, check.names = F)
+
+
+# Get all files beginning with "results-"
+listFiles <- list.files(path = input_scores_folder, pattern = results_string)
+
+
+# Loop thru results tables and perform intitial formatting
+for (i in 1:length(listFiles)){
+  
+  print(listFiles[i])
+
+  res <- parseTableV2(
+    table_name = paste(input_scores_folder, listFiles[i], sep = '/'),
+    tables_w_assists_string = results_string
+    )
+
+  
+  if (i == 1){
+    players <- res$players
+    games <- res$games
+    weapons <- res$long_team_weapons
+  } else {
+    players <- rbind(players, res$players)
+    games <- rbind(games, res$games)
+    weapons <- rbind(weapons, res$long_team_weapons)
+  }
+  
+}
+
+
+```
+
+
+Overview 
+==================
+
+### Overview Table
+```{r overview}
+
+# Make match summary table
+matches <- games %>%
+  dplyr::ungroup() %>%
+  separate(col = "Overall_Result", sep = "_", into = c("TeamScore", "OpposingScore"), convert = T) %>%
+  mutate(Mode_Map = paste(Mode, Map, sep = "-")) %>%
+  dplyr::group_by(Opponent_Team, Date) %>%
+  dplyr::select(TeamScore, OpposingScore, Mode_Map) %>%
+  dplyr::summarise(
+    TeamScore = median(TeamScore),
+    OpposingScore = median(OpposingScore),
+    Modes_Maps = paste(sort(unique(Mode_Map)),collapse=", ")
+  ) %>%
+  mutate(
+    Month = months_vector[gsub("_.*", "", Date)],
+    Year = gsub(".*_", "", Date)
+  ) %>%
+  relocate("Month", .after = "Date") %>%
+  relocate("Year", .after = "Month")
+
+# Order by Date
+matches <- matches %>%
+  arrange(Date)
+
+# Make table
+# Being lazy, using code straight from example here
+# https://rstudio.github.io/DT/
+# Export code is from https://stackoverflow.com/a/50040562
+datatable(matches,
+          class = 'cell-border stripe',
+          extensions = 'Buttons',
+
+          options = list(
+              paging = TRUE,
+              searching = TRUE,
+              fixedColumns = TRUE,
+              ordering = TRUE,
+              dom = 'tBp',
+              server = FALSE,
+              buttons = c('copy', 'csv', 'excel')
+          )
+          )
+
+
+```
+
+
+### Mode Summary
+
+```{r mode results}
+
+modes_sum <- games %>%
+  dplyr::ungroup() %>%
+  dplyr::select(Mode) %>%
+  mutate(value=1) %>%
+  dplyr::group_by(Mode) %>%
+  dplyr::summarise(
+    sum = sum(value)
+  )  
+
+modes_summary_input <- games %>%
+  dplyr::ungroup() %>%
+  dplyr::select(Result, Mode) %>%
+  mutate(value=1) %>%
+  dplyr::ungroup() %>%
+  left_join(modes_sum) %>%
+  dplyr::group_by(Result, Mode) %>%
+  dplyr::summarise(
+    Proportion = 100 * value / sum,
+    prop = sum(Proportion)
+  ) %>%
+  dplyr::select(-Proportion) %>%
+  distinct()
+
+
+modes_bars <- modes_summary_input %>%
+  rename(Percent = prop) %>%
+  ggplot(aes(x=Mode, y=Percent, fill=Result)) +
+  geom_bar(stat = "identity", position = "stack", color="black") +
+  theme_bw() +
+  ylab("Percent (%)") +
+  xlab("") +
+  scale_fill_manual(
+    values = results_colors
+  )
+  
+
+ggplotly(modes_bars, height = 400, width = 650)
+
+
+```
+
+
+Heatmap {data-height=800}
+==================
+
+```{r heatmap creation, include=FALSE}
+
+# can get legend without plot https://www.geeksforgeeks.org/draw-ggplot2-legend-without-plot-in-r/
+
+# 3 games width of 10 with 2 row annotations (Sub and Special)
+
+# Switch to short key
+weapons_short_key <- games %>%
+  dplyr::ungroup() %>%
+  dplyr::select(key, short_key)
+
+weapons_wide_hm <- weapons %>%
+  left_join(weapons_short_key) %>%
+  dplyr::select(-key) %>%
+  pivot_wider(
+    names_from = c("short_key"), values_from = "value", values_fill = 0
+  ) %>%
+  filter(!is.na(Main))  %>%
+  column_to_rownames("Main")
+
+# Basic heatmap
+# pheatmap(weapons_wide_hm)
+
+# Weapons (rows annotations)
+weapons_table_meta_hm <- weapons_table %>%
+  dplyr::select(Main, Special) %>%
+  column_to_rownames(var = "Main")
+
+# Games (column annotations)
+games_meta_hm <- games %>%
+  dplyr::ungroup() %>%
+  dplyr::select(short_key, Result, Map, Mode) %>%
+  column_to_rownames(var = "short_key")
+
+# Check for differences in vectors
+
+# If there's a difference here, that means the weapons meta is missing something
+setdiff(row.names(weapons_wide_hm), row.names(weapons_table_meta_hm))
+
+
+# If there's a difference here, that means we're missing a color specification for a special
+setdiff(weapons_table_meta_hm$Special, names(hm_colors[["Special"]]))
+
+
+# If there's a difference here, that means we probably typo'd a result
+setdiff(games_meta_hm$Result, names(hm_colors[["Result"]]))
+
+
+# If there's a difference here, it's also probably a typo
+setdiff(games_meta_hm$Mode, names(hm_colors[["Mode"]]))
+
+
+# If there's a difference here, that means the map was either mistyped or we need to add a color for it
+setdiff(games_meta_hm$Map, names(hm_colors[["Map"]]))
+
+#gg_hm_plot <- as.ggplot(ph_hm_plot)
+
+
+```
+
+
+### Heatmap
+
+```{r show heatmap, fig.height=16, fig.width=14}
+
+# HM w/ annotations
+pheatmap(weapons_wide_hm,
+         annotation_row = weapons_table_meta_hm,
+         annotation_col = games_meta_hm,
+         annotation_legend = F,
+         cellwidth = 14, cellheight = 14,
+         annotation_colors = hm_colors,
+         fontsize_row = 15,
+         fontsize_col = 17,
+         fontsize = 15,
+         legend = F
+         )
+
+
+```
+
+
+### Legend
+
+```{r show hm legend, fig.height=8, fig.width=10}
+
+legend_font_title <- 22
+legend_font_text <- 18
+
+
+special_legend <- createLegend(
+  table = weapons_table_meta_hm,
+  color_column = "Special",
+  colors_list = hm_colors,
+  number_columns = 2,
+  legend_title_size = legend_font_title,
+  legend_text_size = legend_font_text
+) 
+
+result_legend <- createLegend(
+  table = games_meta_hm,
+  color_column = "Result",
+  colors_list = hm_colors,
+  number_columns = 1,
+  legend_title_size = legend_font_title,
+  legend_text_size = legend_font_text
+) 
+
+map_legend <- createLegend(
+  table = games_meta_hm,
+  color_column = "Map",
+  colors_list = hm_colors,
+  number_columns = 2,
+  legend_title_size = legend_font_title,
+  legend_text_size = legend_font_text
+) 
+
+
+mode_legend <- createLegend(
+  table = games_meta_hm,
+  color_column = "Mode",
+  colors_list = hm_colors,
+  number_columns = 1,
+  legend_title_size = legend_font_title,
+  legend_text_size = legend_font_text
+) 
+
+
+plot_grid(special_legend, result_legend, 
+          map_legend, mode_legend, nrow = 2,
+         rel_widths = c(4, 1, 4, 1),
+          align = "h")
+
+
+```
+
+
+
+```{r make players subpages, include=FALSE}
+
+# Based on https://github.com/rstudio/flexdashboard/issues/80#issuecomment-273342573
+# And https://somtom.github.io/post/using-dynamically-rendered-r-markdown-childs-for-reports/
+
+
+# Create object for holding results
+out = NULL
+
+# Allow duplicate labels
+options(knitr.duplicate.label = 'allow')
+
+# Make separate env for calling players_pages.Rmd
+subpage_env <- new.env()
+
+# Make list of data to pass to Rmd for making player pages
+sub_rmd_data <- list()
+
+sub_rmd_data[["player_info"]] <- players
+sub_rmd_data[["weapons_info"]] <- weapons_table
+sub_rmd_data[["roster_info"]] <- input_roster_aliases_table
+sub_rmd_data[["weapon_colors"]] <- main_weapon_colors
+
+# Assign filtered data and product group to subpage_env 
+assign("subpage_data", sub_rmd_data, subpage_env)
+
+# Pass function to subpage_env
+assign("playerResults", playerResults, subpage_env)
+
+
+# Set output dir to get child Rmd to run
+# They do NOT produce any outputs of their own though
+knitr::opts_knit$set(output.dir = getwd())
+
+# Loop thru players_order vector and make pages
+for (player in players_order) {
+
+  # Pass player to child Rmd
+  assign("player", player, subpage_env)
+
+  # Knit and add to vector
+  out = c(out, knitr::knit_child(params$players_rmd, envir = subpage_env))
+}
+
+# The paste function below makes flexdashboard able to render the generated sub pages
+
+
+```
+
+
+`r paste(knitr::knit_child(text = out), collapse = '')`
+
+
+
+Scoreboards {style="height:90pc;" data-navmenu="Overall Results"}
+==================
+
+```{r game dump}
+
+# Players
+# Switching to manually specifying column names
+# For initial select
+games_df <- players %>%
+  mutate(Assists = if_else(
+    is.na(Assists),
+    "NA",
+    as.character(Assists)
+  )
+  ) %>%
+  dplyr::select(-Type, -Code, -Notes)  %>%
+  mutate(
+    Splats = if_else(
+        Assists != 0,
+        paste(Splats, " <", Assists, ">", sep = ""),
+        as.character(Splats)
+      ),
+    Opposing_Splats = if_else(
+        Opposing_Assists != 0,
+        paste(Opposing_Splats, " <", Opposing_Assists, ">", sep = ""),
+        as.character(Opposing_Splats)
+      )
+  ) %>%
+  dplyr::select(-Assists) %>%
+  dplyr::select(
+    Result, Knockout, Opponent_Team, Date, Map, Mode,
+    Main,
+    Player, Main, Points, Splats, Deaths, Specials,
+    starts_with("Opposing")) %>%
+  dplyr::select(1:13, Opposing_Player, Opposing_Main, Opposing_Points, Opposing_Splats, Opposing_Deaths, Opposing_Specials) %>%
+  arrange(Date)    
+  
+
+
+datatable(
+  games_df,
+  filter = "top",
+  extensions = 'Buttons',
+  options = list(
+      paging = TRUE,
+      searching = TRUE,
+      fixedColumns = TRUE,
+      ordering = TRUE,
+      dom = 'tBp',
+      server = FALSE,
+      buttons = c('copy', 'csv', 'excel'),
+      pageLength = 20
+  )  
+  )
+
+
+```
+
+
+PSL Player Stats {data-navmenu="Overall Results"}
+==================
+
+```{r psl player stats, include=FALSE}
+
+# Make named vector from roster to make player names consistent across matches
+aliases_v <- setNames(input_roster_aliases_table$Player, input_roster_aliases_table$Alias)
+
+# Make key for aliases
+aliases_key <- data.frame(
+      Player = names(aliases_v),
+      Standard_Player = unname(aliases_v)
+    )
+
+# Convert to dataframe
+aliases_key$Standard_Player <- factor(
+  aliases_key$Standard_Player,
+  levels = players_order
+)
+
+
+# Select just the needed columns
+# And, match PSL Player Stats formatting
+# This will also remove rows w/ NAs
+players_base_table <- players %>% 
+  left_join(
+    aliases_key
+  ) %>% 
+   dplyr::select(
+     all_of(
+       c(
+         "Standard_Player",
+         "Opponent_Team",
+         "Date",
+         "Splats",
+         "Assists",
+         "Deaths",
+         "Specials",
+         "Points",
+         "Mode"
+       )
+     )
+   ) %>% 
+  filter(
+    !is.na(Splats)
+  )
+
+# Make tables just for TW points
+players_tw_per_set <- players_base_table %>% 
+  dplyr::group_by(
+    Standard_Player, Opponent_Team, Date
+  ) %>% 
+  summarize(
+    Turf_Inked_TW_only = Points[Mode == "Turf-War"]
+  )
+
+players_tw <- players_tw_per_set %>% 
+      dplyr::ungroup() %>% 
+      dplyr::group_by(Standard_Player) %>% 
+      summarize(
+        Turf_Inked_TW_only = sum(Turf_Inked_TW_only)
+      )
+
+
+# Get values per set
+players_per_set <- players_base_table %>% 
+  dplyr::group_by(
+    Standard_Player, Opponent_Team, Date
+  ) %>% 
+  summarize(
+    Games_Played = length(Opponent_Team),
+    Splats = sum(Splats),
+    Assists = sum(Assists),
+    Kills = Splats - Assists,
+    Deaths = sum(Deaths),
+    Specials_Used = sum(Specials)
+  ) %>% 
+  dplyr::select(
+    -Splats
+  ) %>% 
+  relocate(
+    Kills, .before = "Assists"
+  ) %>% 
+  arrange(
+    Date,
+    Standard_Player
+  ) %>% 
+  left_join(
+    players_tw_per_set
+  ) %>% 
+  rename(
+    Player = Standard_Player
+  ) 
+
+
+
+# Format to running total
+players_table_totals <- players_base_table %>% 
+  dplyr::group_by(Standard_Player) %>% 
+  summarize(
+    Matches_Played = length(unique(Opponent_Team)),
+    Games_Played = length(Opponent_Team),
+    Splats = sum(Splats),
+    Assists = sum(Assists),
+    Kills = Splats - Assists,
+    Deaths = sum(Deaths),
+    Specials_Used = sum(Specials)
+  ) %>% 
+  dplyr::select(
+    -Splats
+  ) %>% 
+  relocate(
+    Kills, .before = "Assists"
+  )  %>% 
+  left_join(
+    players_tw
+  ) %>% 
+  rename(
+    Player = Standard_Player
+  )
+
+
+
+```
+
+
+### PSL Player Stats Per Set
+
+```{r psl per set player stats}
+
+datatable(
+  players_per_set,
+  filter = "top",
+  class = 'cell-border stripe',
+  extensions = 'Buttons',
+  options = list(
+      paging = TRUE,
+      searching = TRUE,
+      fixedColumns = TRUE,
+      ordering = TRUE,
+      dom = 'tBp',
+      server = FALSE,
+      buttons = c('copy', 'csv', 'excel')
+  )  
+  )
+
+
+```
+
+
+### PSL Player Stats
+
+```{r psl running player stats}
+
+datatable(
+  players_table_totals,
+  filter = "top",
+  class = 'cell-border stripe',
+  extensions = 'Buttons',
+  options = list(
+      paging = TRUE,
+      searching = TRUE,
+      fixedColumns = TRUE,
+      ordering = TRUE,
+      dom = 'tBp',
+      server = FALSE,
+      buttons = c('copy', 'csv', 'excel')
+  )   
+  )
+
+
+```
+
+
+PSL Weapon Usage {style="height:50pc;" data-navmenu="Overall Results"}
+==================
+
+```{r psl weapon stats, include=FALSE}
+
+# Set order for modes
+players$Mode_Ordered <- factor(
+  players$Mode,
+  levels = c(
+    "Turf-War",
+    "Splat-Zones",
+    "Tower-Control",
+    "Rainmaker",
+    "Clam-Blitz"
+    )
+)
+
+
+# Get maps
+matches_maps <- matches %>% 
+  dplyr::select(
+    Opponent_Team,
+    Date,
+    Modes_Maps
+  )
+
+
+
+# Get key to filter complete cross by
+matches_key <- matches %>% 
+  mutate(
+    Key = paste(
+      Opponent_Team,
+      Date, sep = "_"
+      )
+  )
+
+# Get weapons table
+psl_weapons_sub <- players %>% 
+  dplyr::ungroup() %>% 
+  left_join(
+    aliases_key
+  ) %>% 
+   mutate(
+     Standard_Player = factor(Standard_Player, levels = players_order)
+   ) %>% 
+   dplyr::select(
+     all_of(
+       c(
+         "Standard_Player",
+         "Opponent_Team",
+         "Date",
+         "Mode_Ordered",
+         "Main"
+       )
+     )
+   ) 
+
+# Format based on available data
+psl_weapons_pres <- psl_weapons_sub %>% 
+  pivot_wider(
+    names_from = "Mode_Ordered",
+    values_from = "Main"
+  ) %>% 
+  rename(
+    Player = Standard_Player
+  ) %>% 
+  mutate(
+    Key = paste(
+      Opponent_Team,
+      Date, sep = "_"
+      ),
+    Player_Key = paste(
+      Player,
+      Opponent_Team,
+      Date, sep = "_"
+      )
+  ) %>% 
+  filter(
+    Key %in% matches_key$Key
+  )
+
+
+# Fill in missing values
+psl_weapons_filled <-
+  expand(psl_weapons_sub, Date, Standard_Player, Opponent_Team) %>% 
+  mutate(
+    Key = paste(
+      Opponent_Team,
+      Date, sep = "_"
+      ),
+    Player_Key = paste(
+      Standard_Player,
+      Opponent_Team,
+      Date, sep = "_"
+      )
+  ) %>% 
+  filter(
+    Key %in% matches_key$Key,
+    !Player_Key %in% psl_weapons_pres$Player_Key
+  ) %>% 
+  rename(
+    Player = Standard_Player
+  )
+
+# Add those values in
+psl_weapons_fin <- psl_weapons_pres %>% 
+  bind_rows(
+    psl_weapons_filled
+  ) %>% 
+  dplyr::select(
+    -all_of(
+      c(
+        "Key",
+        "Player_Key"
+      )
+    )
+  ) %>% 
+  arrange(
+    Date,
+    Player
+  ) %>% 
+  left_join(
+    matches_maps
+  )
+
+
+```
+
+
+```{r show psl weapon stats}
+
+datatable(
+  psl_weapons_fin,
+  filter = "top",
+  class = 'cell-border stripe',
+  extensions = 'Buttons',
+  options = list(
+      pageLength = 6,
+      paging = TRUE,
+      searching = TRUE,
+      fixedColumns = TRUE,
+      ordering = TRUE,
+      dom = 'tBp',
+      server = FALSE,
+      buttons = c('copy', 'csv', 'excel')
+  )
+  )
+
+```
+

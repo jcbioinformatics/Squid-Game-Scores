@@ -1,0 +1,80 @@
+/* Enable scroll bar*/
+.scrollable {
+   overflow-y: scroll;
+   min-width: auto;
+   overflow: auto; 
+       max-height:1200px;
+   overflow-y:auto;
+   }
+
+
+/* Set color of navbar  */
+.navbar {
+    border-color:black;
+    background-color:#6bc1f0;
+    /* border-bottom: 5px; */
+  }
+
+
+/* Set color of active tab */
+.navbar-inverse .navbar-nav>.active > a, .navbar-inverse .navbar-nav>.active > a:hover, .navbar-inverse .navbar-nav>.active > a:focus {
+    background-color: #7908D9;     
+  }
+
+
+/* Active tab in dropdown */
+.navbar-inverse .dropdown-menu > .active > a,
+.navbar-inverse .dropdown-menu > .active > a:hover,
+.navbar-inverse .dropdown-menu > .active > a:focus {
+  background-color: #7908D9;
+  }
+
+
+/* Set color of tab on hover */
+.navbar-inverse .navbar-nav>li > a:hover, .navbar-inverse .navbar-nav > li > a:focus {
+    background-color: #2919b8;     
+  }
+
+
+/* Hover tab in dropdown  */
+.navbar-inverse .dropdown-menu > .li > a,
+.navbar-inverse .dropdown-menu > li > a:hover,
+.navbar-inverse .dropdown-menu > li > a:focus {
+    background-color: #2919b8
+  }
+
+
+/* Set color of dropdown tab name*/
+/* https://github.com/thomaspark/bootswatch/blob/v3.3.5/cosmo/bootstrap.css#L4643-L4744  */
+.navbar-inverse .navbar-nav > .open > a,
+.navbar-inverse .navbar-nav > .open > a:focus {
+    background-color: #2919b8;
+  }
+
+
+/* Position of logo on NavBar */
+.navbar-logo img {
+      position: absolute;
+      right: 0px;
+  }
+
+
+/* Page title */
+.chart-title {
+      border-bottom: 1px solid #d7d7d7;
+      border-color:black;
+      color: #333333;
+      font-size: 20px;
+      font-weight: 700;
+      padding: 7px 10px 4px;
+      background-color: #DBDBDB; 
+  }
+
+  /*
+  .heading-level1 {  
+     color: #00467f;
+      font-size: 18px;
+      font-weight: 500;
+      background-color: #DBDBDB;
+  }
+  */

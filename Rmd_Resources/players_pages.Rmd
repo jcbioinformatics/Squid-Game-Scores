@@ -1,0 +1,48 @@
+`r paste0('# ', player, '{data-navmenu="Players"}')`
+
+
+```{r call function}
+
+# The player results function returns a list that then goes into another list
+# Because of the tagList call
+# There's probably a better way to do this, but it works
+pl <- htmltools::tagList(
+  playerResults(
+    players_df = sub_rmd_data[["player_info"]],
+    pl = player,
+    weapons_meta = sub_rmd_data[["weapons_info"]],
+    usage = "tree",
+    weapon_colors = sub_rmd_data[["weapon_colors"]],
+    roster_table = sub_rmd_data[["roster_info"]])
+  )
+
+
+```
+
+
+### Weapons Overview
+```{r weapon summary table}
+
+pl[[1]][["summary"]]
+
+
+```
+
+
+### Weapons Details
+```{r weapon per game table}
+
+pl[[1]][["mode_table"]]
+
+
+```
+
+
+### Weapons Usage
+```{r weapon usage figure}
+
+pl[[1]][["treemap"]]
+
+
+```
+
