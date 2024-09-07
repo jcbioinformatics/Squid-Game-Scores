@@ -193,7 +193,7 @@ source(params$functions_source)
 ```
 
 
-```{r numeric months to names, include=FALSE}
+```{r set vectors for use below, include=FALSE}
 
 months_vector <- c(
   "01" = "January",
@@ -208,6 +208,14 @@ months_vector <- c(
   "10" = "October",
   "11" = "November",
   "12" = "December"
+)
+
+modes_ordered <- c(
+  "Turf-War",
+  "Splat-Zones",
+  "Tower-Control",
+  "Rainmaker",
+  "Clam-Blitz"
 )
 
 
@@ -797,13 +805,7 @@ PSL Weapon Usage {style="height:50pc;" data-navmenu="Overall Results"}
 # Set order for modes
 players$Mode_Ordered <- factor(
   players$Mode,
-  levels = c(
-    "Turf-War",
-    "Splat-Zones",
-    "Tower-Control",
-    "Rainmaker",
-    "Clam-Blitz"
-    )
+  levels = modes_ordered
 )
 
 
