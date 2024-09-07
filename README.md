@@ -60,6 +60,7 @@ You are now ready to start using your own data.
 
 
 4. In [Rmd_Resources/squid-game-scores.css](Rmd_Resources/squid-game-scores.css), change the hexcodes for the `:root` variables
+
 ![image](https://github.com/user-attachments/assets/c0ef64de-4fa7-4e6a-9c6b-5cbe8676a3b8)
 * Depending on the text editor used, it may look very different. The above screenshot was taken with it open in [VS Code](https://code.visualstudio.com/download)
 * The important thing is to change the hexcodes in that section as desired
