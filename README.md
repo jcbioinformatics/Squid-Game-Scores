@@ -25,7 +25,7 @@ And, the output basically recreates the scoreboards, in addition to giving infor
 * If you have `git` installed, you can use `git clone https://github.com/jcbioinformatics/Squid-Game-Scores.git`
 * Otherwise, click the green `Code` button, choose `Download Zip`, and decompress the resulting download
 
-![image](https://github.com/user-attachments/assets/304f875f-7d6d-4f44-953a-ea33bcc7f938)
+![image](https://github.com/user-attachments/assets/9fdeefd0-5ceb-45ab-b92e-ad30e164bfd8)
 
 
 3. Open the Squid-Game-Scores.Rmd file with RStudio
