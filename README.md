@@ -13,6 +13,28 @@ And, the output basically recreates the scoreboards, in addition to giving infor
 
 # Tables and Figures
 
+The html is organized into tabs, so below is the list of tabs that have tables and figures
+
+* Overview
+  * Overview Table - Opponent team name, match date, scores, and maps with modes
+  * Mode Summary - Bar plot showing percents for wins/losses per mode
+* Heatmap
+  * Heatmap of weapon usage for each match
+  * Also gives maps, modes, and match result 
+* Players
+  * Weapons Overview Table - Number of matches and win ratio and averages and totals for Points, Splats, Kills, Assists and totals for Deaths
+    * Splats refers to value after Points given in the scoreboard
+    * Kills is the difference between that and the number in <>
+  * Weapons Details Table - Per match results for each weapon
+  * Weapons Usage - Tree map grouped by Weapon Class and Special
+* Scoreboards
+  * Scoreboards Table  - Recreation of Splatoon 3 scoreboards w/ Date and Opponent Team name added
+* PSL Player Stats
+  * PSL Player Stats Per Set Table - Per set summary for each player, includes totals for games played, Kills, Assists, Deaths, and Specials used
+    * Also includes points for Turf War
+    * Includes opponent team name and date too
+  * PSL Player Stats Table - Running total of Matches, Games, Kills, Assists, Deaths, Specials, and Turf Inked based on all input data
+* PSL Weapon Usage Table - Names of weapons used for each mode
 
 # Setup
 
