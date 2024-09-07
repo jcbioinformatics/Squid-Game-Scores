@@ -104,7 +104,7 @@ You are now ready to start using your own data.
 
 The weapon names need to match the name what's in [here](Rmd_Resources/weapons-metadata.txt) exactly.
 
-It's essentially based on the table [here](https://splatoonwiki.org/wiki/List_of_weapons_in_Splatoon_3), with the following modifications
+It's essentially based in the [Wiki table](https://splatoonwiki.org/wiki/List_of_weapons_in_Splatoon_3), with the following modifications
 * Single quotes were removed
 * Periods at the end of the names were removed
 * 0 was added to weapons that start with periods
