@@ -1,6 +1,30 @@
 ##########################################################
 # Define functions used in Splatoon 3 logging
 
+# Excel loading function is modified from https://www.geeksforgeeks.org/how-to-read-a-xlsx-file-with-multiple-sheets-in-r/
+multiplesheets <- function(fname, res_string) { 
+  
+  # Get vector of sheet names
+  sheets <- excel_sheets(fname)
+  
+  # Filter sheets names to just include results
+  if (!is.na(res_string)) {
+    sheets <- sheets[grepl(res_string, sheets)]  
+  }
+  
+  # Load sheets in as separate tibbles in a list
+  tibble <- lapply(sheets, function(x) readxl::read_excel(fname, sheet = x)) 
+  
+  # Convert to data frames
+  data_frame <- lapply(tibble, as.data.frame) 
+  
+  # Assign names to data frames 
+  names(data_frame) <- sheets 
+  
+  return(data_frame) 
+} 
+
+
 # Parser function for the two weapons columns
 # P1:W1,P2:W2...
 parseWeapons <- function(table, col, res_names){
@@ -42,38 +66,48 @@ parseStats <- function(table, exclude_columns, split_column, output_columns, fir
 #######################################################
 # V2 parsing, Weapons in same column as stats
 
-parseTableV2 <- function(table_name, tables_w_assists_string){
+parseTableV2 <- function(table_name, tables_w_assists_string, type="txt"){
   #table_name <- "input-results_season_2_Fall_2023/results-10.12.2023.txt"
+
+  #print(table_name)
+    
+  if (type == "txt") {
+    # Read table
+    res_t <- read.table(table_name, header = T, sep = "\t", check.names = F)    
+  } else {
+    res_t <- table_name
+  }
   
-  print(table_name)
-  # Read table
-  res_t <- read.table(table_name, header = T, sep = "\t", check.names = F)
   
   # Make combined game style table
   res_t_games <- res_t %>%
     dplyr::filter(Type == "Game")
   
   # Get individual stats
-  if (!grepl(tables_w_assists_string, table_name)) {
-    # Case where table is NOT expected to have assists
-    # Split out team stats
-    team_stats <- parseStats(table = res_t_games,
-                                       exclude_columns = c("Opposing-Stats"),
-                                       split_column = "Team-Stats",
-                                       first_split_columns = c("Player", "Stats"),
-                                       output_columns = c("Main", "Points", "Splats", "Deaths", "Specials"),
-                                       rankCol = "Splats"
-    )
+  if (type == "txt") {
     
-    # Split out opposing team stats
-    opposing_team_stats <- parseStats(table = res_t_games,
-                                                exclude_columns = c("Team-Stats"),
-                                                split_column = "Opposing-Stats",
-                                                first_split_columns = c("Opposing_Player", "Stats"),
-                                                output_columns = c("Opposing_Main", "Opposing_Points", "Opposing_Splats", 
-                                                                   "Opposing_Deaths", "Opposing_Specials"),
-                                                rankCol = "Opposing_Splats"
-    )      
+    if (!grepl(tables_w_assists_string, table_name)) {
+      # Case where table is NOT expected to have assists
+      # Split out team stats
+      team_stats <- parseStats(table = res_t_games,
+                               exclude_columns = c("Opposing-Stats"),
+                               split_column = "Team-Stats",
+                               first_split_columns = c("Player", "Stats"),
+                               output_columns = c("Main", "Points", "Splats", "Deaths", "Specials"),
+                               rankCol = "Splats"
+      )
+      
+      # Split out opposing team stats
+      opposing_team_stats <- parseStats(table = res_t_games,
+                                        exclude_columns = c("Team-Stats"),
+                                        split_column = "Opposing-Stats",
+                                        first_split_columns = c("Opposing_Player", "Stats"),
+                                        output_columns = c("Opposing_Main", "Opposing_Points", "Opposing_Splats", 
+                                                           "Opposing_Deaths", "Opposing_Specials"),
+                                        rankCol = "Opposing_Splats"
+      )        
+    }
+    
   } else {
     # Case where table IS expected to have assists
     # Split out team stats
