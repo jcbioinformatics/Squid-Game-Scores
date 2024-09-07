@@ -136,7 +136,8 @@ It's essentially based in the [Wiki table](https://splatoonwiki.org/wiki/List_of
 **None of the values entered in this table should be quoted**
 
 Please see [this Excel file](Input_Scoreboard_Data.xlsx) for example input data
-* Google Sheets files can be saved as Excel files
+* I generally prefer csv or txt, but it's convenient to have all results in the same file
+* Also, Google Sheets files can be saved as Excel files, so Excel is reasonably accessible
 
 The first row under the header is essentially metadata. 
 
