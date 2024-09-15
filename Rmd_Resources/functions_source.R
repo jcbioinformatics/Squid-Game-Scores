@@ -303,9 +303,9 @@ playerResults <- function(
         th(rowspan = 2, 'Matches'),
         th(rowspan = 2, 'Win_Ratio'),
         th(colspan = 2, 'Points', style = "text-align: center"),
-        th(colspan = 2, 'Splats', style = "text-align: center"),
-        th(colspan = 2, 'Kills', style = "text-align: center"),
-        th(colspan = 2, 'Assists', style = "text-align: center"),
+        th(colspan = 2, 'K + A', style = "text-align: center"),
+        th(colspan = 2, 'Kills (K)', style = "text-align: center"),
+        th(colspan = 2, 'Assists (A)', style = "text-align: center"),
         th(rowspan = 2, "Total Deaths")
       ),
       tr(
@@ -338,8 +338,7 @@ playerResults <- function(
     rownames = F,
     caption = htmltools::tags$caption(
       style = "color:black; text-align: left;",
-      paste("Points averages are Total / Games, while all other averages are Total / Deaths.", 
-      "Kills and Assists are calculated just using sets for which those data are available", sep = "\n")
+      "Points averages are Total / Games, while all other averages are Total / Deaths."
     ),
     extensions = 'Buttons',
     options = list(
@@ -362,7 +361,7 @@ playerResults <- function(
   
   # Make table per mode
   mode_dt <- datatable(
-    ind[order(ind$Mode), ] %>% dplyr::select(-Deaths_w_Assists_Data),
+    ind[order(ind$Mode), ] %>% dplyr::select(-Deaths_w_Assists_Data) %>% rename(`K + A` = Splats),
     extensions = c('RowGroup', 'Buttons'),
     options = list(
       rowGroup = list(dataSrc = 1),
