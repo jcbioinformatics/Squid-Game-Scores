@@ -78,6 +78,10 @@ parseTableV2 <- function(table_name, tables_w_assists_string, type="txt"){
     res_t <- table_name
   }
   
+  # Set all Date and Opponent_Team values based on first row
+  res_t$Date <- res_t$Date[1]
+  res_t$Opponent_Team <- res_t$Opponent_Team[1]
+  
   
   # Make combined game style table
   res_t_games <- res_t %>%
