@@ -88,6 +88,7 @@ cat(
   + Ramblings
   + Todo
 * Changelog
+  + Changes prior to GitHub repos initialization
 * Overview
   + Table w/ Opponent, maps, scores, and dates
   + Stacked bar plot of W/L ratio per mode
@@ -116,6 +117,8 @@ cat(
   "
 * Per row grouping summary stats
 * Get interactive heatmap to work
+* Change grouping for Players Weapons Details tables
+* Make Date and Opponent_Team only required for first row
   "
 )
 
