@@ -987,7 +987,10 @@ weaponsPSLTable <- function(
     ) %>% 
     left_join(
       matches_maps
-    )  
+    ) %>% 
+    filter(
+      !is.na(Player)
+    )
   
   return(psl_weapons_fin)
 }
