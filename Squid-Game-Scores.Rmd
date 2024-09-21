@@ -249,6 +249,9 @@ weapons_table <- read.table(params$input_weapons_metadata, sep = "\t", header = 
 # Load roster
 input_roster_aliases_table <- read.table(params$input_roster_aliases, sep = "\t", header = T, check.names = F)
 
+# Set variable with number of players
+player_count <- length(unique(input_roster_aliases_table$Player))
+
 
 # Load Excel sheets
 excel_data <- multiplesheets(
@@ -295,27 +298,7 @@ Overview
 ```{r overview}
 
 # Make match summary table
-matches <- games %>%
-  dplyr::ungroup() %>%
-  separate(col = "Overall_Result", sep = "_", into = c("TeamScore", "OpposingScore"), convert = T) %>%
-  mutate(Mode_Map = paste(Mode, Map, sep = "-")) %>%
-  dplyr::group_by(Opponent_Team, Date) %>%
-  dplyr::select(TeamScore, OpposingScore, Mode_Map) %>%
-  dplyr::summarise(
-    TeamScore = median(TeamScore),
-    OpposingScore = median(OpposingScore),
-    Modes_Maps = paste(sort(unique(Mode_Map)),collapse=", ")
-  ) %>%
-  mutate(
-    Month = months_vector[gsub("_.*", "", Date)],
-    Year = gsub(".*_", "", Date)
-  ) %>%
-  relocate("Month", .after = "Date") %>%
-  relocate("Year", .after = "Month")
-
-# Order by Date
-matches <- matches %>%
-  arrange(Date)
+matches <- overviewTable(games)
 
 # Make table
 # Being lazy, using code straight from example here
@@ -344,40 +327,7 @@ datatable(matches,
 
 ```{r mode results}
 
-modes_sum <- games %>%
-  dplyr::ungroup() %>%
-  dplyr::select(Mode) %>%
-  mutate(value=1) %>%
-  dplyr::group_by(Mode) %>%
-  dplyr::summarise(
-    sum = sum(value)
-  )  
-
-modes_summary_input <- games %>%
-  dplyr::ungroup() %>%
-  dplyr::select(Result, Mode) %>%
-  mutate(value=1) %>%
-  dplyr::ungroup() %>%
-  left_join(modes_sum) %>%
-  dplyr::group_by(Result, Mode) %>%
-  dplyr::summarise(
-    Proportion = 100 * value / sum,
-    prop = sum(Proportion)
-  ) %>%
-  dplyr::select(-Proportion) %>%
-  distinct()
-
-
-modes_bars <- modes_summary_input %>%
-  rename(Percent = prop) %>%
-  ggplot(aes(x=Mode, y=Percent, fill=Result)) +
-  geom_bar(stat = "identity", position = "stack", color="black") +
-  theme_bw() +
-  ylab("Percent (%)") +
-  xlab("") +
-  scale_fill_manual(
-    values = results_colors
-  )
+modes_bars <- modeBarPlot(games)
   
 
 ggplotly(modes_bars, height = 400, width = 650)
@@ -395,54 +345,34 @@ Heatmap {data-height=800}
 
 # 3 games width of 10 with 2 row annotations (Sub and Special)
 
-# Switch to short key
-weapons_short_key <- games %>%
-  dplyr::ungroup() %>%
-  dplyr::select(key, short_key)
-
-weapons_wide_hm <- weapons %>%
-  left_join(weapons_short_key) %>%
-  dplyr::select(-key) %>%
-  pivot_wider(
-    names_from = c("short_key"), values_from = "value", values_fill = 0
-  ) %>%
-  filter(!is.na(Main))  %>%
-  column_to_rownames("Main")
-
-# Basic heatmap
-# pheatmap(weapons_wide_hm)
-
-# Weapons (rows annotations)
-weapons_table_meta_hm <- weapons_table %>%
-  dplyr::select(Main, Special) %>%
-  column_to_rownames(var = "Main")
-
-# Games (column annotations)
-games_meta_hm <- games %>%
-  dplyr::ungroup() %>%
-  dplyr::select(short_key, Result, Map, Mode) %>%
-  column_to_rownames(var = "short_key")
+# Create tables for heatmap
+hm_data <- heatmapTablesCreation(
+  games_df = games,
+  weapons_metadata = weapons_table,
+  weapons_usage = weapons
+)
 
 # Check for differences in vectors
 
 # If there's a difference here, that means the weapons meta is missing something
-setdiff(row.names(weapons_wide_hm), row.names(weapons_table_meta_hm))
+# Or, there's a typo
+setdiff(row.names(hm_data[["data"]]), row.names(hm_data[["weapons_meta"]]))
 
 
 # If there's a difference here, that means we're missing a color specification for a special
-setdiff(weapons_table_meta_hm$Special, names(hm_colors[["Special"]]))
+setdiff(hm_data[["weapons_meta"]]$Special, names(hm_colors[["Special"]]))
 
 
 # If there's a difference here, that means we probably typo'd a result
-setdiff(games_meta_hm$Result, names(hm_colors[["Result"]]))
+setdiff(hm_data[["games_meta"]]$Result, names(hm_colors[["Result"]]))
 
 
 # If there's a difference here, it's also probably a typo
-setdiff(games_meta_hm$Mode, names(hm_colors[["Mode"]]))
+setdiff(hm_data[["games_meta"]]$Mode, names(hm_colors[["Mode"]]))
 
 
 # If there's a difference here, that means the map was either mistyped or we need to add a color for it
-setdiff(games_meta_hm$Map, names(hm_colors[["Map"]]))
+setdiff(hm_data[["games_meta"]]$Map, names(hm_colors[["Map"]]))
 
 #gg_hm_plot <- as.ggplot(ph_hm_plot)
 
@@ -455,9 +385,9 @@ setdiff(games_meta_hm$Map, names(hm_colors[["Map"]]))
 ```{r show heatmap, fig.height=16, fig.width=14}
 
 # HM w/ annotations
-pheatmap(weapons_wide_hm,
-         annotation_row = weapons_table_meta_hm,
-         annotation_col = games_meta_hm,
+pheatmap(hm_data[["data"]],
+         annotation_row = hm_data[["weapons_meta"]],
+         annotation_col = hm_data[["games_meta"]],
          annotation_legend = F,
          cellwidth = 14, cellheight = 14,
          annotation_colors = hm_colors,
@@ -475,53 +405,14 @@ pheatmap(weapons_wide_hm,
 
 ```{r show hm legend, fig.height=8, fig.width=10}
 
-legend_font_title <- 22
-legend_font_text <- 18
-
-
-special_legend <- createLegend(
-  table = weapons_table_meta_hm,
-  color_column = "Special",
-  colors_list = hm_colors,
-  number_columns = 2,
-  legend_title_size = legend_font_title,
-  legend_text_size = legend_font_text
-) 
-
-result_legend <- createLegend(
-  table = games_meta_hm,
-  color_column = "Result",
-  colors_list = hm_colors,
-  number_columns = 1,
-  legend_title_size = legend_font_title,
-  legend_text_size = legend_font_text
-) 
-
-map_legend <- createLegend(
-  table = games_meta_hm,
-  color_column = "Map",
-  colors_list = hm_colors,
-  number_columns = 2,
-  legend_title_size = legend_font_title,
-  legend_text_size = legend_font_text
-) 
-
-
-mode_legend <- createLegend(
-  table = games_meta_hm,
-  color_column = "Mode",
-  colors_list = hm_colors,
-  number_columns = 1,
-  legend_title_size = legend_font_title,
-  legend_text_size = legend_font_text
-) 
-
-
-plot_grid(special_legend, result_legend, 
-          map_legend, mode_legend, nrow = 2,
-         rel_widths = c(4, 1, 4, 1),
-          align = "h")
-
+# Make legend for heatmap
+heatmapLegendCreation(
+  hm_game_meta = hm_data[["games_meta"]],
+  hm_weapons_meta = hm_data[["weapons_meta"]],
+  legend_font_title_size = 22,
+  legend_font_text_size = 18,
+  hm_legend_colors = hm_colors
+)
 
 ```
 
@@ -589,36 +480,8 @@ Scoreboards {style="height:90pc;" data-navmenu="Overall Results"}
 # Players
 # Switching to manually specifying column names
 # For initial select
-games_df <- players %>%
-  mutate(Assists = if_else(
-    is.na(Assists),
-    "NA",
-    as.character(Assists)
-  )
-  ) %>%
-  dplyr::select(-Type, -Code, -Notes)  %>%
-  mutate(
-    Splats = if_else(
-        Assists != 0,
-        paste(Splats, " <", Assists, ">", sep = ""),
-        as.character(Splats)
-      ),
-    Opposing_Splats = if_else(
-        Opposing_Assists != 0,
-        paste(Opposing_Splats, " <", Opposing_Assists, ">", sep = ""),
-        as.character(Opposing_Splats)
-      )
-  ) %>%
-  dplyr::select(-Assists) %>%
-  dplyr::select(
-    Result, Knockout, Opponent_Team, Date, Map, Mode,
-    Main,
-    Player, Main, Points, Splats, Deaths, Specials,
-    starts_with("Opposing")) %>%
-  dplyr::select(1:13, Opposing_Player, Opposing_Main, Opposing_Points, Opposing_Splats, Opposing_Deaths, Opposing_Specials) %>%
-  arrange(Date)    
+games_df <- scoreboardRecreation(players)  
   
-
 
 datatable(
   games_df,
@@ -645,122 +508,11 @@ PSL Player Stats {data-navmenu="Overall Results"}
 
 ```{r psl player stats, include=FALSE}
 
-# Make named vector from roster to make player names consistent across matches
-aliases_v <- setNames(input_roster_aliases_table$Player, input_roster_aliases_table$Alias)
-
-# Make key for aliases
-aliases_key <- data.frame(
-      Player = names(aliases_v),
-      Standard_Player = unname(aliases_v)
-    )
-
-# Convert to dataframe
-aliases_key$Standard_Player <- factor(
-  aliases_key$Standard_Player,
-  levels = players_order
+# Format tables
+psl_player_stats_tables <- statsPSLTables(
+  players_info_df = players,
+  players_roster = input_roster_aliases_table
 )
-
-
-# Select just the needed columns
-# And, match PSL Player Stats formatting
-# This will also remove rows w/ NAs
-players_base_table <- players %>% 
-  left_join(
-    aliases_key
-  ) %>% 
-   dplyr::select(
-     all_of(
-       c(
-         "Standard_Player",
-         "Opponent_Team",
-         "Date",
-         "Splats",
-         "Assists",
-         "Deaths",
-         "Specials",
-         "Points",
-         "Mode"
-       )
-     )
-   ) %>% 
-  filter(
-    !is.na(Splats)
-  )
-
-# Make tables just for TW points
-players_tw_per_set <- players_base_table %>% 
-  dplyr::group_by(
-    Standard_Player, Opponent_Team, Date
-  ) %>% 
-  summarize(
-    Turf_Inked_TW_only = Points[Mode == "Turf-War"]
-  )
-
-players_tw <- players_tw_per_set %>% 
-      dplyr::ungroup() %>% 
-      dplyr::group_by(Standard_Player) %>% 
-      summarize(
-        Turf_Inked_TW_only = sum(Turf_Inked_TW_only)
-      )
-
-
-# Get values per set
-players_per_set <- players_base_table %>% 
-  dplyr::group_by(
-    Standard_Player, Opponent_Team, Date
-  ) %>% 
-  summarize(
-    Games_Played = length(Opponent_Team),
-    Splats = sum(Splats),
-    Assists = sum(Assists),
-    Kills = Splats - Assists,
-    Deaths = sum(Deaths),
-    Specials_Used = sum(Specials)
-  ) %>% 
-  dplyr::select(
-    -Splats
-  ) %>% 
-  relocate(
-    Kills, .before = "Assists"
-  ) %>% 
-  arrange(
-    Date,
-    Standard_Player
-  ) %>% 
-  left_join(
-    players_tw_per_set
-  ) %>% 
-  rename(
-    Player = Standard_Player
-  ) 
-
-
-
-# Format to running total
-players_table_totals <- players_base_table %>% 
-  dplyr::group_by(Standard_Player) %>% 
-  summarize(
-    Matches_Played = length(unique(Opponent_Team)),
-    Games_Played = length(Opponent_Team),
-    Splats = sum(Splats),
-    Assists = sum(Assists),
-    Kills = Splats - Assists,
-    Deaths = sum(Deaths),
-    Specials_Used = sum(Specials)
-  ) %>% 
-  dplyr::select(
-    -Splats
-  ) %>% 
-  relocate(
-    Kills, .before = "Assists"
-  )  %>% 
-  left_join(
-    players_tw
-  ) %>% 
-  rename(
-    Player = Standard_Player
-  )
-
 
 
 ```
@@ -771,12 +523,13 @@ players_table_totals <- players_base_table %>%
 ```{r psl per set player stats}
 
 datatable(
-  players_per_set,
+  psl_player_stats_tables[["values_per_set"]],
   filter = "top",
   class = 'cell-border stripe',
   extensions = 'Buttons',
   options = list(
       paging = TRUE,
+      pageLength = player_count * 2,
       searching = TRUE,
       fixedColumns = TRUE,
       ordering = TRUE,
@@ -795,12 +548,13 @@ datatable(
 ```{r psl running player stats}
 
 datatable(
-  players_table_totals,
+  psl_player_stats_tables[["running_totals"]],
   filter = "top",
   class = 'cell-border stripe',
   extensions = 'Buttons',
   options = list(
       paging = TRUE,
+      pageLength = player_count,
       searching = TRUE,
       fixedColumns = TRUE,
       ordering = TRUE,
@@ -819,120 +573,13 @@ PSL Weapon Usage {style="height:50pc;" data-navmenu="Overall Results"}
 
 ```{r psl weapon stats, include=FALSE}
 
-# Set order for modes
-players$Mode_Ordered <- factor(
-  players$Mode,
-  levels = modes_ordered
+# Make PSL-style weapons usage table
+psl_weapons_fin <- weaponsPSLTable(
+  players_info_df = players,
+  aliases_key = psl_player_stats_tables[["aliases_key"]],
+  matches_df = matches,
+  modes_order = modes_ordered
 )
-
-
-# Get maps
-matches_maps <- matches %>% 
-  dplyr::select(
-    Opponent_Team,
-    Date,
-    Modes_Maps
-  )
-
-
-
-# Get key to filter complete cross by
-matches_key <- matches %>% 
-  mutate(
-    Key = paste(
-      Opponent_Team,
-      Date, sep = "_"
-      )
-  )
-
-# Get weapons table
-psl_weapons_sub <- players %>% 
-  dplyr::ungroup() %>% 
-  left_join(
-    aliases_key
-  ) %>% 
-   mutate(
-     Standard_Player = factor(Standard_Player, levels = players_order)
-   ) %>% 
-   dplyr::select(
-     all_of(
-       c(
-         "Standard_Player",
-         "Opponent_Team",
-         "Date",
-         "Mode_Ordered",
-         "Main"
-       )
-     )
-   ) 
-
-# Format based on available data
-psl_weapons_pres <- psl_weapons_sub %>% 
-  pivot_wider(
-    names_from = "Mode_Ordered",
-    values_from = "Main"
-  ) %>% 
-  rename(
-    Player = Standard_Player
-  ) %>% 
-  mutate(
-    Key = paste(
-      Opponent_Team,
-      Date, sep = "_"
-      ),
-    Player_Key = paste(
-      Player,
-      Opponent_Team,
-      Date, sep = "_"
-      )
-  ) %>% 
-  filter(
-    Key %in% matches_key$Key
-  )
-
-
-# Fill in missing values
-psl_weapons_filled <-
-  expand(psl_weapons_sub, Date, Standard_Player, Opponent_Team) %>% 
-  mutate(
-    Key = paste(
-      Opponent_Team,
-      Date, sep = "_"
-      ),
-    Player_Key = paste(
-      Standard_Player,
-      Opponent_Team,
-      Date, sep = "_"
-      )
-  ) %>% 
-  filter(
-    Key %in% matches_key$Key,
-    !Player_Key %in% psl_weapons_pres$Player_Key
-  ) %>% 
-  rename(
-    Player = Standard_Player
-  )
-
-# Add those values in
-psl_weapons_fin <- psl_weapons_pres %>% 
-  bind_rows(
-    psl_weapons_filled
-  ) %>% 
-  dplyr::select(
-    -all_of(
-      c(
-        "Key",
-        "Player_Key"
-      )
-    )
-  ) %>% 
-  arrange(
-    Date,
-    Player
-  ) %>% 
-  left_join(
-    matches_maps
-  )
 
 
 ```
@@ -946,7 +593,7 @@ datatable(
   class = 'cell-border stripe',
   extensions = 'Buttons',
   options = list(
-      pageLength = 6,
+      pageLength = player_count,
       paging = TRUE,
       searching = TRUE,
       fixedColumns = TRUE,
