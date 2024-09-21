@@ -398,7 +398,6 @@ playerResults <- function(
   list_res <- list()
   
 
-    
   # Get just columns of interest
   # Derive kills
   # Make new column of deaths to have cases where that match does NOT have assists known
@@ -507,8 +506,6 @@ playerResults <- function(
   ))
   
   hash_indices <- c(3, 5, 7, 9, 11)
-
-  
 
   
   # Make summary table
@@ -838,7 +835,6 @@ statsPSLTables <- function(
     ) 
   
   
-  
   # Format to running total
   psl_tables[["running_totals"]] <- players_base_table %>% 
     dplyr::group_by(Standard_Player) %>% 
@@ -893,7 +889,6 @@ weaponsPSLTable <- function(
       Date,
       Modes_Maps
     )
-  
   
   
   # Get key to filter complete cross by

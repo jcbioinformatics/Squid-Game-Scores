@@ -414,6 +414,7 @@ heatmapLegendCreation(
   hm_legend_colors = hm_colors
 )
 
+
 ```
 
 
@@ -603,6 +604,7 @@ datatable(
       buttons = c('copy', 'csv', 'excel')
   )
   )
+
 
 ```
 
