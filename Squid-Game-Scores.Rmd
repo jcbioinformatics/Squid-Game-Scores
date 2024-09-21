@@ -249,6 +249,9 @@ weapons_table <- read.table(params$input_weapons_metadata, sep = "\t", header = 
 # Load roster
 input_roster_aliases_table <- read.table(params$input_roster_aliases, sep = "\t", header = T, check.names = F)
 
+# Set variable with number of players
+player_count <- length(unique(input_roster_aliases_table$Player))
+
 
 # Load Excel sheets
 excel_data <- multiplesheets(
@@ -526,6 +529,7 @@ datatable(
   extensions = 'Buttons',
   options = list(
       paging = TRUE,
+      pageLength = player_count * 2,
       searching = TRUE,
       fixedColumns = TRUE,
       ordering = TRUE,
@@ -550,6 +554,7 @@ datatable(
   extensions = 'Buttons',
   options = list(
       paging = TRUE,
+      pageLength = player_count,
       searching = TRUE,
       fixedColumns = TRUE,
       ordering = TRUE,
@@ -588,7 +593,7 @@ datatable(
   class = 'cell-border stripe',
   extensions = 'Buttons',
   options = list(
-      pageLength = 6,
+      pageLength = player_count,
       paging = TRUE,
       searching = TRUE,
       fixedColumns = TRUE,
