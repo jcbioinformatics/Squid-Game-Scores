@@ -198,6 +198,182 @@ parseTableV2 <- function(table_name, tables_w_assists_string, type="txt"){
 }
 
 
+#######################################################
+# Make Overview table
+overviewTable <- function(games_df) {
+  # Make match summary table
+  matches <- games_df %>%
+    dplyr::ungroup() %>%
+    separate(col = "Overall_Result", sep = "_", into = c("TeamScore", "OpposingScore"), convert = T) %>%
+    mutate(Mode_Map = paste(Mode, Map, sep = "-")) %>%
+    dplyr::group_by(Opponent_Team, Date) %>%
+    dplyr::select(TeamScore, OpposingScore, Mode_Map) %>%
+    dplyr::summarise(
+      TeamScore = median(TeamScore),
+      OpposingScore = median(OpposingScore),
+      Modes_Maps = paste(sort(unique(Mode_Map)),collapse=", ")
+    ) %>%
+    mutate(
+      Month = months_vector[gsub("_.*", "", Date)],
+      Year = gsub(".*_", "", Date)
+    ) %>%
+    relocate("Month", .after = "Date") %>%
+    relocate("Year", .after = "Month")
+  
+  # Order by Date
+  matches <- matches %>%
+    arrange(Date)
+  
+  return(matches)
+}
+
+
+#######################################################
+# Make Mode Summary bar plot
+modeBarPlot <- function(games_df) {
+  
+  # Get total number of games per mode
+  modes_sum <- games_df %>%
+    dplyr::ungroup() %>%
+    dplyr::select(Mode) %>%
+    mutate(value=1) %>%
+    dplyr::group_by(Mode) %>%
+    dplyr::summarise(
+      sum = sum(value)
+    )  
+  
+  # Get counts for each result per mode 
+  # Join totals to get percents
+  modes_summary_input <- games %>%
+    dplyr::ungroup() %>%
+    dplyr::select(Result, Mode) %>%
+    mutate(value=1) %>%
+    dplyr::ungroup() %>%
+    left_join(modes_sum) %>%
+    dplyr::group_by(Result, Mode) %>%
+    dplyr::summarise(
+      Proportion = 100 * value / sum,
+      prop = sum(Proportion)
+    ) %>%
+    dplyr::select(-Proportion) %>%
+    distinct()
+  
+  # Make bar plot
+  modes_bars <- modes_summary_input %>%
+    rename(Percent = prop) %>%
+    ggplot(aes(x=Mode, y=Percent, fill=Result)) +
+    geom_bar(stat = "identity", position = "stack", color="black") +
+    theme_bw() +
+    ylab("Percent (%)") +
+    xlab("") +
+    scale_fill_manual(
+      values = results_colors
+    ) 
+  
+  return(modes_bars)
+}
+
+
+#######################################################
+# Heatmap table generation
+heatmapTablesCreation <- function(
+  games_df,
+  weapons_metadata,
+  weapons_usage
+) {
+  # Make list to hold outputs
+  hm_tables <- list()
+  
+  # Switch to short key
+  weapons_short_key <- games_df %>%
+    dplyr::ungroup() %>%
+    dplyr::select(key, short_key)
+  
+  hm_tables[["data"]] <- weapons_usage %>%
+    left_join(weapons_short_key) %>%
+    dplyr::select(-key) %>%
+    pivot_wider(
+      names_from = c("short_key"), values_from = "value", values_fill = 0
+    ) %>%
+    filter(!is.na(Main))  %>%
+    column_to_rownames("Main")
+  
+  # Basic heatmap
+  # pheatmap(weapons_wide_hm)
+  
+  # Weapons (rows annotations)
+  hm_tables[["weapons_meta"]] <- weapons_metadata %>%
+    dplyr::select(Main, Special) %>%
+    column_to_rownames(var = "Main")
+  
+  # Games (column annotations)
+  hm_tables[["games_meta"]] <- games %>%
+    dplyr::ungroup() %>%
+    dplyr::select(short_key, Result, Map, Mode) %>%
+    column_to_rownames(var = "short_key")  
+  
+  return(hm_tables)
+}
+
+
+#######################################################
+# Make legend for heatmap
+heatmapLegendCreation <- function(
+  hm_game_meta,
+  hm_weapons_meta,
+  legend_font_title_size,
+  legend_font_text_size,
+  hm_legend_colors,
+  legends_rel_widths = c(4, 1, 4, 1)
+) {
+  special_legend <- createLegend(
+    table = hm_weapons_meta,
+    color_column = "Special",
+    colors_list = hm_legend_colors,
+    number_columns = 2,
+    legend_title_size = legend_font_title_size,
+    legend_text_size = legend_font_text_size
+  ) 
+  
+  result_legend <- createLegend(
+    table = hm_game_meta,
+    color_column = "Result",
+    colors_list = hm_legend_colors,
+    number_columns = 1,
+    legend_title_size = legend_font_title_size,
+    legend_text_size = legend_font_text_size
+  ) 
+  
+  map_legend <- createLegend(
+    table = hm_game_meta,
+    color_column = "Map",
+    colors_list = hm_legend_colors,
+    number_columns = 2,
+    legend_title_size = legend_font_title_size,
+    legend_text_size = legend_font_text_size
+  ) 
+  
+  
+  mode_legend <- createLegend(
+    table = hm_game_meta,
+    color_column = "Mode",
+    colors_list = hm_legend_colors,
+    number_columns = 1,
+    legend_title_size = legend_font_title_size,
+    legend_text_size = legend_font_text_size
+  ) 
+  
+  # Combine legends
+  hm_legend <- plot_grid(special_legend, result_legend, 
+            map_legend, mode_legend, nrow = 2,
+            rel_widths = legends_rel_widths,
+            align = "h") 
+  
+  return(hm_legend)
+}
+
+
+#######################################################
 # Set results per player
 playerResults <- function(
     players_df = players,
@@ -505,6 +681,7 @@ playerResults <- function(
 }
 
 
+#######################################################
 # Given a table, a column, and a list containing named vectors make legend
 createLegend <- function(table, color_column, colors_list, 
                          number_columns=1, legend_title_size=14,
@@ -523,4 +700,299 @@ createLegend <- function(table, color_column, colors_list,
   
   g_legend <- get_legend(g_plot) 
   return(g_legend)
+}
+
+
+#######################################################
+# Recreate Splatoon3 scoreboards
+scoreboardRecreation <- function(players_info_df) {
+  scoreboard_df <- players_info_df %>%
+    mutate(Assists = if_else(
+      is.na(Assists),
+      "NA",
+      as.character(Assists)
+    )
+    ) %>%
+    dplyr::select(-Type, -Code, -Notes)  %>%
+    mutate(
+      Splats = if_else(
+        Assists != 0,
+        paste(Splats, " <", Assists, ">", sep = ""),
+        as.character(Splats)
+      ),
+      Opposing_Splats = if_else(
+        Opposing_Assists != 0,
+        paste(Opposing_Splats, " <", Opposing_Assists, ">", sep = ""),
+        as.character(Opposing_Splats)
+      )
+    ) %>%
+    dplyr::select(-Assists) %>%
+    dplyr::select(
+      Result, Knockout, Opponent_Team, Date, Map, Mode,
+      Main,
+      Player, Main, Points, Splats, Deaths, Specials,
+      starts_with("Opposing")) %>%
+    dplyr::select(1:13, Opposing_Player, Opposing_Main, Opposing_Points, Opposing_Splats, Opposing_Deaths, Opposing_Specials) %>%
+    arrange(Date)  
+  
+  return(scoreboard_df)
+}
+
+
+#######################################################
+# Make PSL-style stats 
+statsPSLTables <- function(
+    players_info_df,
+    players_roster
+) {
+  # Make list to hold both tables
+  psl_tables <- list()
+  
+  # Make named vector from roster to make player names consistent across matches
+  aliases_v <- setNames(players_roster$Player, players_roster$Alias)
+  
+  # Make key for aliases
+  aliases_key <- data.frame(
+    Player = names(aliases_v),
+    Standard_Player = unname(aliases_v)
+  )
+  
+  # Convert to dataframe
+  aliases_key$Standard_Player <- factor(
+    aliases_key$Standard_Player,
+    levels = players_order
+  )
+  
+  
+  # Select just the needed columns
+  # And, match PSL Player Stats formatting
+  # This will also remove rows w/ NAs
+  players_base_table <- players_info_df %>% 
+    left_join(
+      aliases_key
+    ) %>% 
+    dplyr::select(
+      all_of(
+        c(
+          "Standard_Player",
+          "Opponent_Team",
+          "Date",
+          "Splats",
+          "Assists",
+          "Deaths",
+          "Specials",
+          "Points",
+          "Mode"
+        )
+      )
+    ) %>% 
+    filter(
+      !is.na(Splats)
+    )
+  
+  # Make tables just for TW points
+  players_tw_per_set <- players_base_table %>% 
+    dplyr::group_by(
+      Standard_Player, Opponent_Team, Date
+    ) %>% 
+    summarize(
+      Turf_Inked_TW_only = Points[Mode == "Turf-War"]
+    )
+  
+  players_tw <- players_tw_per_set %>% 
+    dplyr::ungroup() %>% 
+    dplyr::group_by(Standard_Player) %>% 
+    summarize(
+      Turf_Inked_TW_only = sum(Turf_Inked_TW_only)
+    )
+  
+  
+  # Get values per set
+  psl_tables[["values_per_set"]] <- players_base_table %>% 
+    dplyr::group_by(
+      Standard_Player, Opponent_Team, Date
+    ) %>% 
+    summarize(
+      Games_Played = length(Opponent_Team),
+      Splats = sum(Splats),
+      Assists = sum(Assists),
+      Kills = Splats - Assists,
+      Deaths = sum(Deaths),
+      Specials_Used = sum(Specials)
+    ) %>% 
+    dplyr::select(
+      -Splats
+    ) %>% 
+    relocate(
+      Kills, .before = "Assists"
+    ) %>% 
+    arrange(
+      Date,
+      Standard_Player
+    ) %>% 
+    left_join(
+      players_tw_per_set
+    ) %>% 
+    rename(
+      Player = Standard_Player
+    ) 
+  
+  
+  
+  # Format to running total
+  psl_tables[["running_totals"]] <- players_base_table %>% 
+    dplyr::group_by(Standard_Player) %>% 
+    summarize(
+      Matches_Played = length(unique(Opponent_Team)),
+      Games_Played = length(Opponent_Team),
+      Splats = sum(Splats),
+      Assists = sum(Assists),
+      Kills = Splats - Assists,
+      Deaths = sum(Deaths),
+      Specials_Used = sum(Specials)
+    ) %>% 
+    dplyr::select(
+      -Splats
+    ) %>% 
+    relocate(
+      Kills, .before = "Assists"
+    )  %>% 
+    left_join(
+      players_tw
+    ) %>% 
+    rename(
+      Player = Standard_Player
+    )  
+  
+  # Also return alias
+  psl_tables[["aliases_key"]] <- aliases_key
+  
+  return(psl_tables)
+}
+
+
+#######################################################
+# Make PSL-style weapons usage table
+weaponsPSLTable <- function(
+  players_info_df,
+  aliases_key,
+  matches_df,
+  modes_order
+  ) {
+  # Set order for modes
+  players_info_df$Mode_Ordered <- factor(
+    players_info_df$Mode,
+    levels = modes_order
+  )
+  
+  
+  # Get maps
+  matches_maps <- matches_df %>% 
+    dplyr::select(
+      Opponent_Team,
+      Date,
+      Modes_Maps
+    )
+  
+  
+  
+  # Get key to filter complete cross by
+  matches_key <- matches_df %>% 
+    mutate(
+      Key = paste(
+        Opponent_Team,
+        Date, sep = "_"
+      )
+    )
+  
+  # Get weapons table
+  psl_weapons_sub <- players_info_df %>% 
+    dplyr::ungroup() %>% 
+    left_join(
+      aliases_key
+    ) %>% 
+    mutate(
+      Standard_Player = factor(Standard_Player, levels = players_order)
+    ) %>% 
+    dplyr::select(
+      all_of(
+        c(
+          "Standard_Player",
+          "Opponent_Team",
+          "Date",
+          "Mode_Ordered",
+          "Main"
+        )
+      )
+    ) 
+  
+  # Format based on available data
+  psl_weapons_pres <- psl_weapons_sub %>% 
+    pivot_wider(
+      names_from = "Mode_Ordered",
+      values_from = "Main"
+    ) %>% 
+    rename(
+      Player = Standard_Player
+    ) %>% 
+    mutate(
+      Key = paste(
+        Opponent_Team,
+        Date, sep = "_"
+      ),
+      Player_Key = paste(
+        Player,
+        Opponent_Team,
+        Date, sep = "_"
+      )
+    ) %>% 
+    filter(
+      Key %in% matches_key$Key
+    )
+  
+  
+  # Fill in missing values
+  psl_weapons_filled <-
+    expand(psl_weapons_sub, Date, Standard_Player, Opponent_Team) %>% 
+    mutate(
+      Key = paste(
+        Opponent_Team,
+        Date, sep = "_"
+      ),
+      Player_Key = paste(
+        Standard_Player,
+        Opponent_Team,
+        Date, sep = "_"
+      )
+    ) %>% 
+    filter(
+      Key %in% matches_key$Key,
+      !Player_Key %in% psl_weapons_pres$Player_Key
+    ) %>% 
+    rename(
+      Player = Standard_Player
+    )
+  
+  # Add those values in
+  psl_weapons_fin <- psl_weapons_pres %>% 
+    bind_rows(
+      psl_weapons_filled
+    ) %>% 
+    dplyr::select(
+      -all_of(
+        c(
+          "Key",
+          "Player_Key"
+        )
+      )
+    ) %>% 
+    arrange(
+      Date,
+      Player
+    ) %>% 
+    left_join(
+      matches_maps
+    )  
+  
+  return(psl_weapons_fin)
 }
