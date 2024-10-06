@@ -287,6 +287,16 @@ for (i in 1:length(names(excel_data))){
   
 }
 
+# Stop Rmd from knitting if player names are missing from Aliases
+input_players <- players$Player[!is.na(players$Player)]
+
+
+players_check <- setdiff(input_players, unique(input_roster_aliases_table$Alias))
+
+if (length(players_check) != 0){
+  stop(paste("Missing players:", players_check))
+}
+
 
 ```
 
