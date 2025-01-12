@@ -557,11 +557,23 @@ playerResults <- function(
   list_res[["summary"]] <- sum_dt
   
   # Make table per mode
+  mode_table_input <- ind[order(ind$Mode), ] %>%
+    dplyr::select(-Deaths_w_Assists_Data) %>%
+    rename(`K + A` = Splats) %>% 
+    dplyr::ungroup() %>% 
+    dplyr::group_by(Mode)
+  
+  # Keep desired mode order
+  mode_table_input$Mode <- factor(mode_table_input$Mode, levels = modes_ordered)
+  
+  mode_table_input <- mode_table_input %>% 
+    arrange(Mode)
+  
   mode_dt <- datatable(
-    ind[order(ind$Mode), ] %>% dplyr::select(-Deaths_w_Assists_Data) %>% rename(`K + A` = Splats),
+    mode_table_input,
     extensions = c('RowGroup', 'Buttons'),
     options = list(
-      rowGroup = list(dataSrc = 1),
+      rowGroup = list(dataSrc = 0),
         paging = TRUE,
         searching = TRUE,
         fixedColumns = TRUE,
