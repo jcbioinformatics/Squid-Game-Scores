@@ -287,14 +287,49 @@ for (i in 1:length(names(excel_data))){
   
 }
 
+
+
+
+```
+
+
+```{r check input data}
+
 # Stop Rmd from knitting if player names are missing from Aliases
 input_players <- players$Player[!is.na(players$Player)]
 
+players_check <- setdiff(players$Player, c(unique(input_roster_aliases_table$Alias), NA))
 
-players_check <- setdiff(input_players, unique(input_roster_aliases_table$Alias))
+# Check for possible typos
+
+# Weapon can be NA in case of unbalanced teams, e.g. 3v4
+main_check <- setdiff(players$Main, c(weapons_table$Main, NA))
+
+result_check <- setdiff(players$Result, names(hm_colors[["Result"]]))
+
+mode_check <- setdiff(players$Mode, names(hm_colors[["Mode"]]))
+
+map_check <- setdiff(players$Map, names(hm_colors[["Map"]]))
+
 
 if (length(players_check) != 0){
   stop(paste("Missing players:", players_check))
+}
+
+if (length(main_check != 0)) {
+  stop(paste("Missing main weapons in metadata:", main_check))
+}
+
+if (length(result_check != 0)) {
+  stop(paste("Unknown result:", result_check))
+}
+
+if (length(mode_check != 0)) {
+  stop(paste("Unknown mode:", mode_check))
+}
+
+if (length(map_check) != 0) {
+  stop(paste("Unknown map:", map_check))
 }
 
 
@@ -361,30 +396,6 @@ hm_data <- heatmapTablesCreation(
   weapons_metadata = weapons_table,
   weapons_usage = weapons
 )
-
-# Check for differences in vectors
-
-# If there's a difference here, that means the weapons meta is missing something
-# Or, there's a typo
-setdiff(row.names(hm_data[["data"]]), row.names(hm_data[["weapons_meta"]]))
-
-
-# If there's a difference here, that means we're missing a color specification for a special
-setdiff(hm_data[["weapons_meta"]]$Special, names(hm_colors[["Special"]]))
-
-
-# If there's a difference here, that means we probably typo'd a result
-setdiff(hm_data[["games_meta"]]$Result, names(hm_colors[["Result"]]))
-
-
-# If there's a difference here, it's also probably a typo
-setdiff(hm_data[["games_meta"]]$Mode, names(hm_colors[["Mode"]]))
-
-
-# If there's a difference here, that means the map was either mistyped or we need to add a color for it
-setdiff(hm_data[["games_meta"]]$Map, names(hm_colors[["Map"]]))
-
-#gg_hm_plot <- as.ggplot(ph_hm_plot)
 
 
 ```
