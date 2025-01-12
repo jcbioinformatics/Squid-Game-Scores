@@ -85,8 +85,5 @@ main_weapon_colors <- c(
 )
 
 
-results_colors = c("Loss"="firebrick3", 
-                   "Loss-Overtime"="orange4", 
-                   "Win"="dodgerblue4",
-                   "Win-Overtime"="navyblue"
-)
+results_colors = hm_colors[["Result"]]
+
