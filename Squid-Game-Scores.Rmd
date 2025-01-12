@@ -362,7 +362,12 @@ datatable(matches,
               server = FALSE,
               buttons = c('copy', 'csv', 'excel')
           )
-          )
+          ) %>% 
+  formatStyle(
+    'Opponent_Team',
+    target = 'row',
+    backgroundColor = styleEqual(c("Total"), c(total_row_color))
+  )
 
 
 ```

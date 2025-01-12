@@ -224,7 +224,21 @@ overviewTable <- function(games_df) {
   matches <- matches %>%
     arrange(Date)
   
-  return(matches)
+  # Make Total row
+  matches_total <- matches %>% 
+    dplyr::ungroup() %>% 
+    dplyr::summarize(
+      Opponent_Team = "Total",
+      Year = paste(unique(Year), sep = ","),
+      TeamScore = sum(TeamScore),
+      OpposingScore = sum(OpposingScore)
+    )
+  
+  # Add total row
+  matches_combined <- matches %>% 
+    bind_rows(matches_total)
+  
+  return(matches_combined)
 }
 
 
@@ -531,7 +545,13 @@ playerResults <- function(
       buttons = c('copy', 'csv', 'excel')      
     )
   ) %>%
-    formatStyle(hash_indices, `border-right` = "solid 2px")
+    formatStyle(hash_indices, `border-right` = "solid 2px") %>% 
+    formatStyle(
+      'Main',
+      target = 'row',
+      backgroundColor = styleEqual(c("Total"), c(total_row_color))
+    )
+  
   
   # Append to list
   list_res[["summary"]] <- sum_dt

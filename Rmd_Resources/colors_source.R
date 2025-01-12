@@ -1,6 +1,9 @@
 ##########################################################
 # Set colors for Splatoon 3 logging
 
+# Set color for Total rows
+total_row_color <- "#EBE9EA"
+
 # Color generation for maps based on
 # randomcoloR package
 
