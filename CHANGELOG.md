@@ -1,8 +1,9 @@
-+ 2.3.0 - Now Open - 1/19/2025
-  - Update Player tables header names
++ 2.3.0 - Going Public - 1/19/2025
+  - Update header names for Player tables
   - Update grouping for Weapons Mode table
   - Add checks for unexpected results, repos, modes, and players
   - Switch colors for maps in heatmap
+  - Set order for Modes in heatmap legend to match usuall PSL mode order
 + 2.2.0 - For the Future - 9/6/2024
   - Switch to using Excel file for input
 + 2.1.0 - Summer Cleaning - 8/30/2024
