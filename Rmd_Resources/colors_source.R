@@ -1,6 +1,12 @@
 ##########################################################
 # Set colors for Splatoon 3 logging
 
+# Set color for Total rows
+total_row_color <- "#EBE9EA"
+
+# Color generation for maps based on
+# randomcoloR package
+
 # Make colors for all heatmap annotations
 hm_colors <- list(
   Result = c(
@@ -11,37 +17,38 @@ hm_colors <- list(
   ) ,
   
   Mode = c(
-    "Rainmaker"="cornflowerblue",
-    "Turf-War"="darkorchid1",
-    "Tower-Control"="gray78",
-    "Splat-Zones"="mediumseagreen",
-    "Clam-Blitz"="plum"
+    "Rainmaker"="#F1D418",
+    "Turf-War"="#7BED00",
+    "Tower-Control"="#6203E6",
+    "Splat-Zones"="#02AD89",
+    "Clam-Blitz"="#B48901"
   ) ,
   
   Map = c(
-    "Eeltail-Alley"="#8DD3C7",
-    "Hagglefish-Market"="#FFFFB3",
-    "MakoMart"="#BEBADA",
-    "Museum-d-Alfonsino"="#FB8072",
-    "Flounder-Heights"="#80B1D3",
-    "Mincemeat-Metalworks"="#FDB462",
-    "Mahi-Mahi-Resort"="#B3DE69",
-    "Scorch-Gorge"="#FCCDE5",
-    "Sturgeon-Shipyard"="#D9D9D9",
-    "Undertow-Spillway"="#BC80BD",
-    "Inkblot-Art-Academy"="#CCEBC5",
-    "Hammerhead-Bridge"= "#FFED6F",
-    "Brinewater-Springs"="lightskyblue1",
-    "Manta-Maria"="orange1",
-    "Um-ami-Ruins"="mistyrose1",
-    "Wahoo-World"="grey60",
-    "Shipshape-Cargo-Co"="forestgreen",
-    "Barnacle-&-Dime"="goldenrod4",
-    "Crableg-Capital"="mediumpurple",
-    "Humpback-Pump-Track"="firebrick3",
-    "Bluefin-Depot"="dodgerblue3",
-    "Marlin-Airport"="gray90",
-    "Robo-ROM-en"="deeppink3"
+    "Eeltail-Alley"="#D89D4C",
+    "Hagglefish-Market"="#E0D28C",
+    "MakoMart"="#DFBAAA",
+    "Museum-d-Alfonsino"="#99EE47",
+    "Flounder-Heights"="#C6E16F",
+    "Mincemeat-Metalworks"="#73E6C8",
+    "Mahi-Mahi-Resort"="#D7C9E2",
+    "Scorch-Gorge"="#A5DA97",
+    "Sturgeon-Shipyard"="#E047DD",
+    "Undertow-Spillway"="#76AEE2",
+    "Inkblot-Art-Academy"="#7D45D8",
+    "Hammerhead-Bridge"= "#DD524F",
+    "Brinewater-Springs"="#D75595",
+    "Manta-Maria"="#69D3DF",
+    "Um-ami-Ruins"="#64DD78",
+    "Wahoo-World"="#7885DF",
+    "Shipshape-Cargo-Co"="#B1DCDE",
+    "Barnacle-&-Dime"="#E3D443",
+    "Crableg-Capital"="#CC7BDB",
+    "Humpback-Pump-Track"="#799883",
+    "Bluefin-Depot"="#807091",
+    "Marlin-Airport"="#D9A3D8",
+    "Robo-ROM-en"="#DB8E80",
+    "Lemuria-Hub"="#DCE6CB"
   ),
   
   Special = c(

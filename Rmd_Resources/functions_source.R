@@ -224,7 +224,21 @@ overviewTable <- function(games_df) {
   matches <- matches %>%
     arrange(Date)
   
-  return(matches)
+  # Make Total row
+  matches_total <- matches %>% 
+    dplyr::ungroup() %>% 
+    dplyr::summarize(
+      Opponent_Team = "Total",
+      Year = paste(unique(Year), sep = ","),
+      TeamScore = sum(TeamScore),
+      OpposingScore = sum(OpposingScore)
+    )
+  
+  # Add total row
+  matches_combined <- matches %>% 
+    bind_rows(matches_total)
+  
+  return(matches_combined)
 }
 
 
@@ -531,17 +545,35 @@ playerResults <- function(
       buttons = c('copy', 'csv', 'excel')      
     )
   ) %>%
-    formatStyle(hash_indices, `border-right` = "solid 2px")
+    formatStyle(hash_indices, `border-right` = "solid 2px") %>% 
+    formatStyle(
+      'Main',
+      target = 'row',
+      backgroundColor = styleEqual(c("Total"), c(total_row_color))
+    )
+  
   
   # Append to list
   list_res[["summary"]] <- sum_dt
   
   # Make table per mode
+  mode_table_input <- ind[order(ind$Mode), ] %>%
+    dplyr::select(-Deaths_w_Assists_Data) %>%
+    rename(`K + A` = Splats) %>% 
+    dplyr::ungroup() %>% 
+    dplyr::group_by(Mode)
+  
+  # Keep desired mode order
+  mode_table_input$Mode <- factor(mode_table_input$Mode, levels = modes_ordered)
+  
+  mode_table_input <- mode_table_input %>% 
+    arrange(Mode)
+  
   mode_dt <- datatable(
-    ind[order(ind$Mode), ] %>% dplyr::select(-Deaths_w_Assists_Data) %>% rename(`K + A` = Splats),
+    mode_table_input,
     extensions = c('RowGroup', 'Buttons'),
     options = list(
-      rowGroup = list(dataSrc = 1),
+      rowGroup = list(dataSrc = 0),
         paging = TRUE,
         searching = TRUE,
         fixedColumns = TRUE,

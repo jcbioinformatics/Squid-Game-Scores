@@ -16,6 +16,7 @@ params:
   colors_source: "./Rmd_Resources/colors_source.R"
   functions_source: "./Rmd_Resources/functions_source.R"
   players_rmd: "./Rmd_Resources/players_pages.Rmd"
+  changelog_md: "./CHANGELOG.md"
   results_string: "NA"
 ---
 
@@ -60,17 +61,11 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 
 cat(
   "
-Yup, this is what I do for fun. I didn't choose the nerd life, it chose me. 
+Proton Splat League is currently on hiatus, but still, I basically made this for fun. And, I figured I should share it eventually in case it could be useful to somebody else. I wasn't even part of their stats team. I didn't choose the nerd life, it chose me. 
 
 Anyway, the Tabs description has a pretty good overview of what's in here. The Overall Results tabs will probably be most helpful, basically just recreating the scoreboard results.
 
-Let me know if you have any suggestions or if anything is wrong.
-
-I'm open to trying to make any of the plots here https://xeno.graphics/ 
-
-I don't know what we'd use any of them for, but if anyone wants really wants one (or a few), I'd try to get them incorporated eventually.
-
-Feel free to make any other requests too for things that'd be helpful, and I'll do my best.
+Feel free to open Issues to suggest edits to what's already here and anything that'd be good to add
 
   "
 )
@@ -88,7 +83,8 @@ cat(
   + Ramblings
   + Todo
 * Changelog
-  + Changes prior to GitHub repos initialization
+  + CHANGELOG.md
+    - Includes changelog from before GitHub repos creation
 * Overview
   + Table w/ Opponent, maps, scores, and dates
   + Stacked bar plot of W/L ratio per mode
@@ -117,8 +113,6 @@ cat(
   "
 * Per row grouping summary stats
 * Get interactive heatmap to work
-* Change grouping for Players Weapons Details tables
-* Make Date and Opponent_Team only required for first row
   "
 )
 
@@ -134,56 +128,11 @@ Changelog
 # Moving title to here fixes the scrollbar issue
 print(htmltools::h3("Changelog", class="title"))
 
+# Read in changelog from external file
+changelog_info <- read_file(params$changelog_md)
+
 cat(
-  "
-  + 2.2.0 - For the Future - 9/6/2024
-    - Switch to using Excel file for input
-  + 2.1.0 - Summer Cleaning - 8/30/2024
-    - Remove 'Anachronox' from function names
-    - Change first select for Scoreboard to use explicit column names
-    - Remove code for handling games without assists from Player Weapon Overview Table
-    - Change default value for 'results_string' parameter
-  + 2.0.0 - Parties and Plays - 8/3/2024 
-    - Move CSS settings to separate file
-    - Refactor input paths
-    - Refactor per player function
-    - Add running PSL Players Stats
-    - Add PSL Player Stats table
-    - Add PSL Weapon Usage table
-    - Add exports for tables
-    - Split source files by color definition vs function
-    - Remove V1 table parsing function
-    - Set defaults for chunks
-    - Make spacing more consistent
-    - Move changelog into separate tab
-    - Split Info tab into subsections
-    - Add page navigation back in for tables
-    - Remove autowidth
-    - Change table sizing
-    - Fix per set missing player issue
-    - Add dynamic player page generation
-  + 1.4.0 - Not Applicable - 6/2/2024
-    - Add support for player summary table w/ disconnects
-  + 1.3.2 - I Am Legend - 5/19/2024
-    - Fix heat map legend getting cut off
-  + 1.3.1 - Weapons Ready - 5/13/2024
-    - Swap order for Main and Player in Overall Results table
-  + 1.3 - Results May Vary - 4/20/2024
-    - Add support for sets w/ and without assists
-  + 1.2 - Totally Tabular - 4/6/2024
-    - Add additional columns and groupings to player summary table
-    - Add special counts back in to match table
-  + 1.1 - Catching Fire - 4/4/2024
-    - Added results for 3/28/24
-    - Updated names
-  + 1.0.0 - The Lorax - 3/15/2024
-    - Added visuals for weapon usage
-    - Has to be specified manually though
-  + 0.5.0 - Spring Cleaning - 3/9/2024
-    - Added support for missing players on focused team
-    - Cleanup individual player list structure
-    - Add filter for player weapon use details  
-  "
+  changelog_info
 )  
 
 
@@ -362,7 +311,12 @@ datatable(matches,
               server = FALSE,
               buttons = c('copy', 'csv', 'excel')
           )
-          )
+          ) %>% 
+  formatStyle(
+    'Opponent_Team',
+    target = 'row',
+    backgroundColor = styleEqual(c("Total"), c(total_row_color))
+  )
 
 
 ```
@@ -389,6 +343,12 @@ Heatmap {data-height=800}
 # can get legend without plot https://www.geeksforgeeks.org/draw-ggplot2-legend-without-plot-in-r/
 
 # 3 games width of 10 with 2 row annotations (Sub and Special)
+
+# Set Mode as factor
+games$Mode <- factor(
+  games$Mode,
+  levels = modes_ordered
+)
 
 # Create tables for heatmap
 hm_data <- heatmapTablesCreation(
