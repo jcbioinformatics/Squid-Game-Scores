@@ -173,6 +173,13 @@ modes_ordered <- c(
   "Clam-Blitz"
 )
 
+results_ordered <- c(
+  "Win",
+  "Win-Overtime",
+  "Loss-Overtime",
+  "Loss"
+)
+
 
 ```
 
@@ -285,6 +292,24 @@ if (length(map_check) != 0) {
 ```
 
 
+```{r set factors}
+
+# Set Mode as factor
+games$Mode <- factor(
+  games$Mode,
+  levels = modes_ordered
+)
+
+# Set Result as factor
+games$Result <- factor(
+  games$Result,
+  levels = results_ordered
+)
+
+
+```
+
+
 Overview 
 ==================
 
@@ -321,15 +346,15 @@ datatable(matches,
 
 ```
 
-
 ### Mode Summary
 
-```{r mode results}
+```{r mode results stacked bars}
 
-modes_bars <- modeBarPlot(games)
-  
+modes_bars <- modeBarPlots(games)
 
-ggplotly(modes_bars, height = 400, width = 650)
+ggplotly(modes_bars[["stacked_bars"]], height = 400, width = 650)
+
+#ggplotly(modes_bars[["dodged_bars"]], height = 400, width = 650)
 
 
 ```
@@ -343,12 +368,6 @@ Heatmap {data-height=800}
 # can get legend without plot https://www.geeksforgeeks.org/draw-ggplot2-legend-without-plot-in-r/
 
 # 3 games width of 10 with 2 row annotations (Sub and Special)
-
-# Set Mode as factor
-games$Mode <- factor(
-  games$Mode,
-  levels = modes_ordered
-)
 
 # Create tables for heatmap
 hm_data <- heatmapTablesCreation(

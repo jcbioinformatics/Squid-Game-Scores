@@ -10,16 +10,14 @@
 output = "weapons-metadata.txt"
 
 # Give url
-url = r'https://splatoonwiki.org/wiki/List_of_weapons_in_Splatoon_3'
+url = r'https://splatoonwiki.org/wiki/Template:Weapons/S3_Weapons'
 
 
 # Load necessary libraries
 
 import pandas as pd
 
-
 # Get data
-
 tables = pd.read_html(url) # Returns list of all tables on page
 weapons_table = tables[0] # Select table of interest
 

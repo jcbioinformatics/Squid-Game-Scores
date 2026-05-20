@@ -243,8 +243,8 @@ overviewTable <- function(games_df) {
 
 
 #######################################################
-# Make Mode Summary bar plot
-modeBarPlot <- function(games_df) {
+# Make Mode Summary bar plots
+modeBarPlots <- function(games_df) {
   
   # Get total number of games per mode
   modes_sum <- games_df %>%
@@ -282,9 +282,48 @@ modeBarPlot <- function(games_df) {
     xlab("") +
     scale_fill_manual(
       values = results_colors
-    ) 
+    )
   
-  return(modes_bars)
+  # Make staggered bars
+  # Function for only showing integers
+  # On y-axis is from
+  # https://stackoverflow.com/a/39877048
+  dodged_bars_counts <- games %>%
+    dplyr::ungroup() %>%
+    dplyr::select(Result, Mode) %>%
+    mutate(value=1) %>% 
+    dplyr::group_by(Result, Mode) %>% 
+    summarize(
+      Totals = sum(value)
+    ) %>%
+    ggplot(aes(
+      x=Mode,
+      y=Totals,
+      fill=Result
+      )) +
+    geom_bar(
+      stat = "identity",
+      position = position_dodge2(width = 0.9, preserve = "single"),
+      color="black"
+      ) +
+    theme_bw() +
+    ylab("Games (#)") +
+    xlab("") +
+    scale_fill_manual(
+      values = results_colors
+    ) + 
+    scale_y_continuous(
+      breaks = function(x) unique(floor(pretty(seq(min(x), (max(x) + 1) * 1.1))))
+      )
+  
+  
+  # Add plots to list
+  modes_bars_list <- list(
+    stacked_bars = modes_bars,
+    dodged_bars = dodged_bars_counts
+  )
+  
+  return(modes_bars_list)
 }
 
 
