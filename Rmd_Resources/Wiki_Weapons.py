@@ -10,7 +10,7 @@
 output = "weapons-metadata.txt"
 
 # Give url
-url = r'https://splatoonwiki.org/wiki/Template:Weapons/S3_Weapons'
+url = './Template_Weapons_S3 Weapons_Inkipedia.html'
 
 
 # Load necessary libraries
@@ -19,7 +19,7 @@ import pandas as pd
 
 # Get data
 tables = pd.read_html(url) # Returns list of all tables on page
-weapons_table = tables[0] # Select table of interest
+weapons_table = tables[1] # Select table of interest
 
 weapons_subset = weapons_table[[
     'Main',
@@ -59,9 +59,6 @@ weapons_subset['Special'] = weapons_subset['Special'].str.replace(" ", "-")
 
 # Replace leading periods with '0.'
 weapons_subset['Main'] = weapons_subset['Main'].str.replace('^\.', "0.", regex=True)
-
-
-print(weapons_subset)
 
 weapons_subset.to_csv(
     output,
