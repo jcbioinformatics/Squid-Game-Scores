@@ -48,7 +48,8 @@ hm_colors <- list(
     "Bluefin-Depot"="#807091",
     "Marlin-Airport"="#D9A3D8",
     "Robo-ROM-en"="#DB8E80",
-    "Lemuria-Hub"="#DCE6CB"
+    "Lemuria-Hub"="#DCE6CB",
+    "Urchin-Underpass"="gray10"
   ),
   
   Special = c(

@@ -68,9 +68,9 @@ parseStats <- function(table, exclude_columns, split_column, output_columns, fir
 
 parseTableV2 <- function(table_name, tables_w_assists_string, type="txt"){
   #table_name <- "input-results_season_2_Fall_2023/results-10.12.2023.txt"
-
+  
   #print(table_name)
-    
+  
   if (type == "txt") {
     # Read table
     res_t <- read.table(table_name, header = T, sep = "\t", check.names = F)    
@@ -116,24 +116,24 @@ parseTableV2 <- function(table_name, tables_w_assists_string, type="txt"){
     # Case where table IS expected to have assists
     # Split out team stats
     team_stats <- parseStats(table = res_t_games,
-                                       exclude_columns = c("Opposing-Stats"),
-                                       split_column = "Team-Stats",
-                                       first_split_columns = c("Player", "Stats"),
-                                       output_columns = c("Main", "Points", "Splats", "Assists", "Deaths", "Specials"),
-                                       rankCol = "Splats"
+                             exclude_columns = c("Opposing-Stats"),
+                             split_column = "Team-Stats",
+                             first_split_columns = c("Player", "Stats"),
+                             output_columns = c("Main", "Points", "Splats", "Assists", "Deaths", "Specials"),
+                             rankCol = "Splats"
     )
     
     # Split out opposing team stats
     opposing_team_stats <- parseStats(table = res_t_games,
-                                                exclude_columns = c("Team-Stats"),
-                                                split_column = "Opposing-Stats",
-                                                first_split_columns = c("Opposing_Player", "Stats"),
-                                                output_columns = c("Opposing_Main", "Opposing_Points", "Opposing_Splats", 
-                                                                   "Opposing_Assists", "Opposing_Deaths", "Opposing_Specials"),
-                                                rankCol = "Opposing_Splats"
+                                      exclude_columns = c("Team-Stats"),
+                                      split_column = "Opposing-Stats",
+                                      first_split_columns = c("Opposing_Player", "Stats"),
+                                      output_columns = c("Opposing_Main", "Opposing_Points", "Opposing_Splats", 
+                                                         "Opposing_Assists", "Opposing_Deaths", "Opposing_Specials"),
+                                      rankCol = "Opposing_Splats"
     )  
   }
-
+  
   # Get just overall result
   res_t_overall <- res_t %>%
     filter(Type == "Summary") %>%
@@ -145,7 +145,7 @@ parseTableV2 <- function(table_name, tables_w_assists_string, type="txt"){
   ind_base_table <- team_stats %>%
     full_join(opposing_team_stats) 
   
-
+  
   # Add game number back in
   res_t_numbers <- res_t %>%
     filter(Type == "Game") %>%
@@ -205,7 +205,7 @@ overviewTable <- function(games_df) {
   matches <- games_df %>%
     dplyr::ungroup() %>%
     separate(col = "Overall_Result", sep = "_", into = c("TeamScore", "OpposingScore"), convert = T) %>%
-    mutate(Mode_Map = paste(Mode, Map, sep = "-")) %>%
+    mutate(Mode_Map = paste(Mode, Map, sep = ":")) %>%
     dplyr::group_by(Opponent_Team, Date) %>%
     dplyr::select(TeamScore, OpposingScore, Mode_Map) %>%
     dplyr::summarise(
@@ -264,12 +264,13 @@ modeBarPlots <- function(games_df) {
     mutate(value=1) %>%
     dplyr::ungroup() %>%
     left_join(modes_sum) %>%
+    mutate(
+      Proportion = 100 * value / sum
+    ) %>% 
     dplyr::group_by(Result, Mode) %>%
     dplyr::summarise(
-      Proportion = 100 * value / sum,
       prop = sum(Proportion)
     ) %>%
-    dplyr::select(-Proportion) %>%
     distinct()
   
   # Make bar plot
@@ -300,12 +301,12 @@ modeBarPlots <- function(games_df) {
       x=Mode,
       y=Totals,
       fill=Result
-      )) +
+    )) +
     geom_bar(
       stat = "identity",
       position = position_dodge2(width = 0.9, preserve = "single"),
       color="black"
-      ) +
+    ) +
     theme_bw() +
     ylab("Games (#)") +
     xlab("") +
@@ -314,7 +315,7 @@ modeBarPlots <- function(games_df) {
     ) + 
     scale_y_continuous(
       breaks = function(x) unique(floor(pretty(seq(min(x), (max(x) + 1) * 1.1))))
-      )
+    )
   
   
   # Add plots to list
@@ -330,9 +331,9 @@ modeBarPlots <- function(games_df) {
 #######################################################
 # Heatmap table generation
 heatmapTablesCreation <- function(
-  games_df,
-  weapons_metadata,
-  weapons_usage
+    games_df,
+    weapons_metadata,
+    weapons_usage
 ) {
   # Make list to hold outputs
   hm_tables <- list()
@@ -372,12 +373,12 @@ heatmapTablesCreation <- function(
 #######################################################
 # Make legend for heatmap
 heatmapLegendCreation <- function(
-  hm_game_meta,
-  hm_weapons_meta,
-  legend_font_title_size,
-  legend_font_text_size,
-  hm_legend_colors,
-  legends_rel_widths = c(4, 1, 4, 1)
+    hm_game_meta,
+    hm_weapons_meta,
+    legend_font_title_size,
+    legend_font_text_size,
+    hm_legend_colors,
+    legends_rel_widths = c(4, 1, 4, 1)
 ) {
   special_legend <- createLegend(
     table = hm_weapons_meta,
@@ -418,9 +419,9 @@ heatmapLegendCreation <- function(
   
   # Combine legends
   hm_legend <- plot_grid(special_legend, result_legend, 
-            map_legend, mode_legend, nrow = 2,
-            rel_widths = legends_rel_widths,
-            align = "h") 
+                         map_legend, mode_legend, nrow = 2,
+                         rel_widths = legends_rel_widths,
+                         align = "h") 
   
   return(hm_legend)
 }
@@ -435,7 +436,7 @@ playerResults <- function(
     usage = "tree",
     weapon_colors = main_weapon_colors,
     roster_table = input_roster_aliases_table
-    ){
+){
   #pl = c("Ruby", "Ayako")
   
   # Subset roster to just that player
@@ -450,7 +451,7 @@ playerResults <- function(
   # Make list for results
   list_res <- list()
   
-
+  
   # Get just columns of interest
   # Derive kills
   # Make new column of deaths to have cases where that match does NOT have assists known
@@ -559,7 +560,7 @@ playerResults <- function(
   ))
   
   hash_indices <- c(3, 5, 7, 9, 11)
-
+  
   
   # Make summary table
   sum_dt <- datatable(
@@ -613,14 +614,14 @@ playerResults <- function(
     extensions = c('RowGroup', 'Buttons'),
     options = list(
       rowGroup = list(dataSrc = 0),
-        paging = TRUE,
-        searching = TRUE,
-        fixedColumns = TRUE,
-        ordering = TRUE,
-        dom = 'tBp',
-        server = FALSE,
-        buttons = c('copy', 'csv', 'excel')
-      ),
+      paging = TRUE,
+      searching = TRUE,
+      fixedColumns = TRUE,
+      ordering = TRUE,
+      dom = 'tBp',
+      server = FALSE,
+      buttons = c('copy', 'csv', 'excel')
+    ),
     selection = 'none',
     filter = 'top',
     rownames = F
@@ -858,25 +859,9 @@ statsPSLTables <- function(
       !is.na(Splats)
     )
   
-  # Make tables just for TW points
-  players_tw_per_set <- players_base_table %>% 
-    dplyr::group_by(
-      Standard_Player, Opponent_Team, Date
-    ) %>% 
-    summarize(
-      Turf_Inked_TW_only = Points[Mode == "Turf-War"]
-    )
-  
-  players_tw <- players_tw_per_set %>% 
-    dplyr::ungroup() %>% 
-    dplyr::group_by(Standard_Player) %>% 
-    summarize(
-      Turf_Inked_TW_only = sum(Turf_Inked_TW_only)
-    )
-  
   
   # Get values per set
-  psl_tables[["values_per_set"]] <- players_base_table %>% 
+  rt <- players_base_table %>% 
     dplyr::group_by(
       Standard_Player, Opponent_Team, Date
     ) %>% 
@@ -897,17 +882,46 @@ statsPSLTables <- function(
     arrange(
       Date,
       Standard_Player
-    ) %>% 
-    left_join(
-      players_tw_per_set
-    ) %>% 
-    rename(
-      Player = Standard_Player
     ) 
   
+  if ("Turf-War" %in% players_base_table$Mode) {
+    # Make tables just for TW points
+    players_tw_per_set <- players_base_table %>% 
+      dplyr::group_by(
+        Standard_Player, Opponent_Team, Date
+      ) %>% 
+      summarize(
+        Turf_Inked_TW_only = Points[Mode == "Turf-War"]
+      )
+    
+    players_tw <- players_tw_per_set %>% 
+      dplyr::ungroup() %>% 
+      dplyr::group_by(Standard_Player) %>% 
+      summarize(
+        Turf_Inked_TW_only = sum(Turf_Inked_TW_only)
+      )
+    
+    psl_tables[["values_per_set"]] <- rt %>% 
+      left_join(
+        players_tw_per_set
+      ) %>% 
+      rename(
+        Player = Standard_Player
+      )  %>% 
+      left_join(
+        players_tw
+      ) 
+  } else {
+    psl_tables[["values_per_set"]] <- rt %>% 
+      rename(
+        Player = Standard_Player
+      )
+  }  
   
   # Format to running total
-  psl_tables[["running_totals"]] <- players_base_table %>% 
+  psl_tables[["running_totals"]] 
+  
+  rt <- players_base_table %>% 
     dplyr::group_by(Standard_Player) %>% 
     summarize(
       Matches_Played = length(unique(Opponent_Team)),
@@ -923,9 +937,6 @@ statsPSLTables <- function(
     ) %>% 
     relocate(
       Kills, .before = "Assists"
-    )  %>% 
-    left_join(
-      players_tw
     ) %>% 
     rename(
       Player = Standard_Player
@@ -941,11 +952,11 @@ statsPSLTables <- function(
 #######################################################
 # Make PSL-style weapons usage table
 weaponsPSLTable <- function(
-  players_info_df,
-  aliases_key,
-  matches_df,
-  modes_order
-  ) {
+    players_info_df,
+    aliases_key,
+    matches_df,
+    modes_order
+) {
   # Set order for modes
   players_info_df$Mode_Ordered <- factor(
     players_info_df$Mode,

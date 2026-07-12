@@ -1,3 +1,8 @@
++ 2.3.1 - Ash Catch-Up - 7/12/2026
+  - Add check for NAs in Specials columns for players
+  - Add color for Urchin-Underpass map
+  - Change mode and map delimiter for overview table
+  - Allow player results to be displayed without Turf War results
 + 2.3.0 - Going Public - 1/19/2025
   - Update header names for Player tables
   - Update grouping for Weapons Mode table

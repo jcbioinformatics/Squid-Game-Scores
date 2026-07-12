@@ -288,6 +288,11 @@ if (length(map_check) != 0) {
   stop(paste("Unknown map:", map_check))
 }
 
+if (dim(specials_na)[1] > 0){
+  print(specials_na)
+  stop("Player results has NAs")
+}
+
 
 ```
 
